@@ -18,6 +18,17 @@
 */
 void sr_arpcache_sweepreqs(struct sr_instance *sr) { 
     /* Fill this in */
+    /*
+    The assignment requires you to send an ARP request about once a second
+    until a reply comes back or we have sent five requests. This function is
+    defined in sr_arpcache.c and called every second, and you should add code
+    that iterates through the ARP request queue and re-sends any outstanding
+    ARP requests that haven’t been sent in the past second. If an ARP request
+    has been sent 5 times with no response, a destination host unreachable
+    should go back to all the sender of packets that were waiting on a reply to
+    this ARP request.
+    */
+    
 }
 
 /* You should not need to touch the rest of this code. */

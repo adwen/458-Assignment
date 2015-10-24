@@ -79,6 +79,8 @@ void sr_handlepacket(struct sr_instance* sr,
   printf("*** -> Received packet of length %d \n",len);
 
   /* fill in code here */
+  /* validate packet, decrement TTL, push it out */
 
+  sr_send_packet(sr, packet, len, interface);
 }/* end sr_ForwardPacket */
 
