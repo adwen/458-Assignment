@@ -79,6 +79,22 @@ void sr_handlepacket(struct sr_instance* sr,
   printf("*** -> Received packet of length %d \n",len);
 
   /* fill in code here */
+  struct sr_ethernet_hdr* header = (struct sr_ethernet_hdr*) packet;
+  enum sr_ethertype ethertype = header->ether_type;
+  if (ethertype == ethertype_arp)
+  {
+    /* ARP header */
+  }
+  else if (ethertype == ethertype_ip)
+  {
+    /* IP header */
+    sr_send_packet(sr, packet, len, interface);
+  }
+  else
+  {
+    /* Invalid header */
 
+    return;
+  }
 }/* end sr_ForwardPacket */
 
