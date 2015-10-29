@@ -107,8 +107,8 @@ void sr_handlepacket(struct sr_instance* sr,
         else{
                 /* Invalid header */
                 fprintf(stderr, "Invalid Header!\n");
-                return;
         }
+        return;
 }/* end sr_ForwardPacket */
 
 /* Function to process the logic behind the ARP Packet */
@@ -128,6 +128,12 @@ int process_ARP(struct sr_instance* sr,
                 fprintf(stderr, "invalid ARP length");
                 return -1;
         } printf("ARP Header passed minimum length test!\n");
+
+        int ethernetHeaderSize = sizeof(sr_ethernet_hdr_t);
+        sr_arp_hdr_t* arp_header = (sr_arp_hdr_t*)(arpPacket + ethernetHeaderSize);
+
+        /* Check if ARP packet is for me.
+        If it is, process and reply. Otherwise, discard. */
 
         return 0; /* Temp: So make gcc doesn't lose it's shit */
 
