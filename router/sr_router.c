@@ -13,6 +13,7 @@
 
 #include <stdio.h>
 #include <assert.h>
+#include <arpa/inet.h>
 
 
 #include "sr_if.h"
@@ -135,6 +136,8 @@ int process_ARP(struct sr_instance* sr,
         /* Check if ARP packet is for me.
         If it is, process and reply. Otherwise, discard. */
 
+
+
         return 0; /* Temp: So make gcc doesn't lose it's shit */
 
 
@@ -164,14 +167,14 @@ int process_IP(struct sr_instance* sr,
         sr_ip_hdr_t *ip_header = (sr_ip_hdr_t *)(ipPacket + ethernetHeaderSize);
 
         /* Sanity Check #2: Verify checksums via cksum() from sr_utils.c */
-        uint16_t cksum_result = cksum(ip_header, ip_header->ip_hl);
+        uint16_t cksum_result = cksum(ip_header, ntohl(ip_header->ip_hl));
         if (!cksum_result) {
                 fprintf(stderr, "Checksum failed!\n");
                 return -1;
         } printf("IP Header passed checksum test!\n");
 
         /* Check the destination */
-        struct sr_if *destination = sr_get_ip_interface(sr, ip_header->ip_dst);
+        struct sr_if *destination = sr_get_ip_interface(sr, ntohl(ip_header->ip_dst));
 
         /* If the packet is for us: We process it here */
         if (destination){
