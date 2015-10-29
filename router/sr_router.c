@@ -45,7 +45,7 @@ void sr_init(struct sr_instance* sr)
     pthread_t thread;
 
     pthread_create(&thread, &(sr->attr), sr_arpcache_timeout, sr);
-    
+
     /* Add initialization code here! */
 
 } /* -- sr_init -- */
@@ -79,16 +79,27 @@ void sr_handlepacket(struct sr_instance* sr,
   printf("*** -> Received packet of length %d \n",len);
 
   /* fill in code here */
-  struct sr_ethernet_hdr* header = (struct sr_ethernet_hdr*) packet;
+
+  // SANITY CHECK: Minimum Length is valid
+  // Supposed ethernet frame length defined in sr_protocol.h
+  // This denotes a frame that is insufficient length
+      if (len < sizeof(sr_ethernet_hdr_t)){
+          fprintf(stderr, "Packet failed Sanity Check #1: ")
+          return -1;
+      }
+
+ernet_hdr* header = (struct sr_ethernet_hdr*) packet;
   enum sr_ethertype ethertype = header->ether_type;
   if (ethertype == ethertype_arp)
   {
     /* ARP header */
+    printf("Packet is a ARP");
   }
   else if (ethertype == ethertype_ip)
   {
     /* IP header */
-    sr_send_packet(sr, packet, len, interface);
+    printf("Packet is a IP packet");
+    //sr_send_packet(sr, packet, len, interface);
   }
   else
   {
@@ -97,4 +108,3 @@ void sr_handlepacket(struct sr_instance* sr,
     return;
   }
 }/* end sr_ForwardPacket */
-
