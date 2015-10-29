@@ -182,11 +182,17 @@ int process_IP(struct sr_instance* sr,
 
             /* If it is an ICMP protocol */
             if (protocol_type == ip_protocol_icmp){
+                /* Construct the header **/
                 sr_icmp_hdr_t *ICMP_header = (sr_icmp_hdr_t *) (ethernetHeaderSize + ipHeaderSize + ipPacket);
 
-                if(ICMP_header->icmp_code!=0|| ICMP_header->icmp_code!=8){
+                /* If it is not a echo request, we dont' do anything? */
+                if(ICMP_header->icmp_code!=0 || ICMP_header->icmp_code!=8){
                     printf("Not an echo request!\n");
                     return -1;
+                }
+                /* If it is a echo request, we send it */
+                if(ICMP_header->icmp_code!=0 || ICMP_header->icmp_code!=8){
+                    /* Send it here */
                 }
             }
         }
