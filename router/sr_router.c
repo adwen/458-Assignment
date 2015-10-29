@@ -87,8 +87,7 @@ void sr_handlepacket(struct sr_instance* sr,
         if (len < sizeof(sr_ethernet_hdr_t)) {
                 fprintf(stderr, "Packet failed Sanity Check #1: ");
                 return;
-        }
-        printf("Valid Ethernet Frame!\n");
+        } printf("Passed initial length test => Valid Ethernet Frame!\n");
 
         /* Case where we receive a ARP */
         if (ethertype(packet) == ethertype_arp) {
@@ -128,7 +127,7 @@ int process_ARP(struct sr_instance* sr,
         if (arpLength < minimum_arpLength) {
                 fprintf(stderr, "invalid ARP length");
                 return -1;
-        }
+        } printf("ARP Header passed minimum length test!\n");
 
         return 0; /* Temp: So make gcc doesn't lose it's shit */
 
@@ -153,7 +152,7 @@ int process_IP(struct sr_instance* sr,
         if (ipLength < minimum_ipLength) {
                 fprintf(stderr, "invalid IP length!\n");
                 return -1;
-        }
+        } printf("IP Header passed minimum length test!\n");
 
         /* Construct the IP Header and deal with it */
         sr_ip_hdr_t *ip_header = (sr_ip_hdr_t *)(ipPacket + ethernetHeaderSize);
@@ -163,9 +162,7 @@ int process_IP(struct sr_instance* sr,
         if (!cksum_result) {
                 fprintf(stderr, "Checksum failed!\n");
                 return -1;
-        }
-
-
+        } printf("IP Header passed checksum test!\n");
 
         return 0; /* Temp: So make gcc doesn't lose it's shit */
 }
