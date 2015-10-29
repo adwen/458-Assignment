@@ -90,21 +90,19 @@ void sr_handlepacket(struct sr_instance* sr,
       }
 
   /* Case where we receive a ARP */
-  if (ethertype(packet) == ethertype_arp)
-  {
+  if (ethertype(packet) == ethertype_arp){
     /* ARP header */
-    printf("Packet is a ARP");
+    printf("Packet is a ARP!\n");
   }
 
   /* Case where we receive a IP */
-  else if (ethertype(packet) == ethertype_ip)
-  {
+  else if (ethertype(packet) == ethertype_ip){
     /* IP header */
-    printf("Packet is a IP packet");
+    printf("Packet is a IP packet!\n");
     /* sr_send_packet(sr, packet, len, interface); */
   }
-  else
-  {
+  
+  else{
     /* Invalid header */
     fprintf(stderr, "Invalid Header!\n");
     return;
