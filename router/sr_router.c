@@ -101,6 +101,7 @@ void sr_handlepacket(struct sr_instance* sr,
         /* Case where we receive a IP */
         else if (ethertype(packet) == ethertype_ip) {
                 printf("Packet is a IP packet!\n");
+                process_IP(sr, packet, len, interface);
                 /* sr_send_packet(sr, packet, len, interface); */
         }
 
