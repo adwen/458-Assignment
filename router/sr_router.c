@@ -79,7 +79,7 @@ void sr_handlepacket(struct sr_instance* sr,
         printf("*** -> Received packet of length %d \n",len);
 
         /* fill in code here */
-        sr_ethernet_hdr_t* header = (sr_ethernet_hdr_t*) packet;
+        /*sr_ethernet_hdr_t* header = (sr_ethernet_hdr_t*) packet; */
 
         /* SANITY CHECK: Minimum Length is valid
            Supposed ethernet frame length defined in sr_protocol.h
@@ -93,7 +93,7 @@ void sr_handlepacket(struct sr_instance* sr,
         if (ethertype(packet) == ethertype_arp) {
 
                 printf("Packet is a ARP!\n");
-                // Pass all the parameters to the ARP function
+                /* Pass all the parameters to the ARP function */
                 process_ARP(sr, packet, len, interface);
         }
 
