@@ -137,21 +137,6 @@ int process_ARP(struct sr_instance* sr,
         If it is, process and reply. Otherwise, discard. */
         struct sr_if* this_interface = sr_get_interface(sr, interface);
 
-        if (ntohl(arp_header->ar_tip) != ntohl(this_interface->ip))
-            return;
-
-        switch (ntohs(arp_header->arp_op))
-        {
-            case arp_op_request:
-                break;
-
-            case arp_op_reply:
-                break;
-
-            default:
-                fprintf(stderr, "Incorrect ARP operation!\n");
-        }
-
         return 0; /* Temp: So make gcc doesn't lose it's shit */
 
 
@@ -190,28 +175,54 @@ int process_IP(struct sr_instance* sr,
         /* Check the destination */
         struct sr_if *destination = sr_get_ip_interface(sr, ntohl(ip_header->ip_dst));
 
-        /* If the packet is for us: We process it here */
+        /* If the packet is for us: We process it */
         if (destination){
-            printf("Packet destination is for us! \n");
+            printf("Packet  is for us! \n");
 
             /* Check the protocol type */
-            uint8_t protocol_type = ntohs(ip_header->ip_p);
+            uint8_t protocol_type = ip_header->ip_p;
 
             /* If it is an ICMP protocol */
             if (protocol_type == ip_protocol_icmp){
+                printf("This IS a ICMP protocol");
+
                 /* Construct the header **/
                 sr_icmp_hdr_t *ICMP_header = (sr_icmp_hdr_t *) (ethernetHeaderSize + ipHeaderSize + ipPacket);
 
                 /* If it is not a echo request, we dont' do anything? */
-                if(ICMP_header->icmp_code!=0 || ntohs(ICMP_header->icmp_code)!=8){
+                if(ICMP_header->icmp_code! = 0 || ICMP_header->icmp_code!= 8){
                     printf("Not an echo request!\n");
                     return -1;
                 }
+
+
                 /* If it is a echo request, we send it */
-                if(ICMP_header->icmp_code!=0 || ntohs(ICMP_header->icmp_code)!=8){
+                if(ICMP_header->icmp_code! = 0 || ICMP_header->icmp_code! = 8){
+                    printf("Echo request")
                     /* Send it here */
                 }
             }
+
+            /* If it is not a ICMP protocol */
+            else if(protocol_type != ip_protocol_icmp){
+                printf("This is not a ICMP Protocol!!!");
+                /* Do some sending response */
+            }
+        }
+
+        /* Otherwise, if the packet is not intended for us */
+        else if (!destination){
+            printf("This packet is not for us! We will just pass it on!\n");
+            /* Datagram should be forwarded: Decrement the TTL */
+
+            /* Check if decrementing will result in 0 */
+            uint8_t current_TTL = ip_header->ip_ttl;
+            if ((current_TTL - 1) <= 0){
+                printf("TTL: TIME EXCEEDED! Discarding Packet\n");
+                /* Need to send a icmp message with type 11, code 0 */
+                int type = 11; int code = 0;
+            } printf("TTL check OK! \n");
+
         }
 
         return 0; /* Temp: So make gcc doesn't lose it's shit */
