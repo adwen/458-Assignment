@@ -223,6 +223,29 @@ int process_IP(struct sr_instance* sr,
                 int type = 11; int code = 0;
             } printf("TTL check OK! \n");
 
+            /* Decrement TTL */
+            ip_header->ip_ttl = ip_header->ip_ttl - 1;
+            /* Check/Update Checksum */
+            ip_header->ip_sum = cksum(ip_header, ip_header->ip_hl * 4);
+            /* Now that we know we can forward it since TTL allows it */
+            /* We need to get a routing table */
+            struct sr_rt *currentRoutingTable = sr->routing_table;
+            printf("Got routing table!\n");
+
+            /* Traverse through the table and find the correct destination */
+            while (currentRoutingTable != NULL){
+                /* Destination IP logical AND with a subnetmask == subnet address */
+                uint32_t packetDestination = ip_header->ip_dst & routing_table->mask.s_addr;
+
+                /* Check if it matches a routing table Destination */
+                if (packetDestination == routing_table->dest.s_addr){
+                    struct sr_if* interface = sr_get_interface(sr, currentRoutingTable->interface);
+                }
+
+                /* not sure what to do here */
+            }
+
+
         }
 
         return 0; /* Temp: So make gcc doesn't lose it's shit */
