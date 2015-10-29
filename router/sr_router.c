@@ -135,8 +135,22 @@ int process_ARP(struct sr_instance* sr,
 
         /* Check if ARP packet is for me.
         If it is, process and reply. Otherwise, discard. */
+        struct sr_if* this_interface = sr_get_interface(sr, interface);
 
+        if (ntohl(arp_header->ar_tip) != ntohl(this_interface->ip))
+            return;
 
+        switch (ntohs(arp_header->arp_op))
+        {
+            case arp_op_request:
+                break;
+
+            case arp_op_reply:
+                break;
+
+            default:
+                fprintf(stderr, "Incorrect ARP operation!\n");
+        }
 
         return 0; /* Temp: So make gcc doesn't lose it's shit */
 
@@ -181,7 +195,7 @@ int process_IP(struct sr_instance* sr,
             printf("Packet destination is for us! \n");
 
             /* Check the protocol type */
-            uint8_t protocol_type = ip_header->ip_p;
+            uint8_t protocol_type = ntohs(ip_header->ip_p);
 
             /* If it is an ICMP protocol */
             if (protocol_type == ip_protocol_icmp){
@@ -189,12 +203,12 @@ int process_IP(struct sr_instance* sr,
                 sr_icmp_hdr_t *ICMP_header = (sr_icmp_hdr_t *) (ethernetHeaderSize + ipHeaderSize + ipPacket);
 
                 /* If it is not a echo request, we dont' do anything? */
-                if(ICMP_header->icmp_code!=0 || ICMP_header->icmp_code!=8){
+                if(ICMP_header->icmp_code!=0 || ntohs(ICMP_header->icmp_code)!=8){
                     printf("Not an echo request!\n");
                     return -1;
                 }
                 /* If it is a echo request, we send it */
-                if(ICMP_header->icmp_code!=0 || ICMP_header->icmp_code!=8){
+                if(ICMP_header->icmp_code!=0 || ntohs(ICMP_header->icmp_code)!=8){
                     /* Send it here */
                 }
             }
