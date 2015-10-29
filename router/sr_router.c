@@ -170,5 +170,26 @@ int process_IP(struct sr_instance* sr,
                 return -1;
         } printf("IP Header passed checksum test!\n");
 
+        /* Check the destination */
+        struct sr_if *destination = sr_get_ip_interface(sr, ip_header->ip_dst);
+
+        /* If the packet is for us: We process it here */
+        if (destination){
+            printf("Packet destination is for us! \n");
+
+            /* Check the protocol type */
+            uint8_t protocol_type = ip_header->ip_p;
+
+            /* If it is an ICMP protocol */
+            if (protocol_type == ip_protocol_icmp){
+                sr_icmp_hdr_t *ICMP_header = (sr_icmp_hdr_t *) (ethernetHeaderSize + ipHeaderSize + ipPacket);
+
+                if(ICMP_header->icmp_code!=0|| ICMP_header->icmp_code!=8){
+                    printf("Not an echo request!\n");
+                    return -1;
+                }
+            }
+        }
+
         return 0; /* Temp: So make gcc doesn't lose it's shit */
 }
