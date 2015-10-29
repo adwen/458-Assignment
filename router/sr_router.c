@@ -89,19 +89,15 @@ void sr_handlepacket(struct sr_instance* sr,
           return ;
       }
 
-  // Use ethertype() from sr_utils.c to get type of frame / packet
-  uint16_t packet_type = ethertype(packet);
-  //enum sr_ethertype ethertype = header->ether_type;  // This is wrong
-
   /* Case where we receive a ARP */
-  if (packet_type == ethertype_arp)
+  if (ethertype(packet) == ethertype_arp)
   {
     /* ARP header */
     printf("Packet is a ARP");
   }
 
   /* Case where we receive a IP */
-  else if (packet_type == ethertype_ip)
+  else if (ethertype(packet) == ethertype_ip)
   {
     /* IP header */
     printf("Packet is a IP packet");
