@@ -87,17 +87,18 @@ void sr_handlepacket(struct sr_instance* sr,
         if (len < sizeof(sr_ethernet_hdr_t)) {
                 fprintf(stderr, "Packet failed Sanity Check #1: ");
                 return;
-        }
+        } printf("Valid Ethernet Frame!\n");
 
         /* Case where we receive a ARP */
         if (ethertype(packet) == ethertype_arp) {
-                /* ARP header */
+
                 printf("Packet is a ARP!\n");
+                // Pass all the parameters to the ARP function
+                process_ARP(sr, packet, len, interface);
         }
 
         /* Case where we receive a IP */
         else if (ethertype(packet) == ethertype_ip) {
-                /* IP header */
                 printf("Packet is a IP packet!\n");
                 /* sr_send_packet(sr, packet, len, interface); */
         }
@@ -108,3 +109,23 @@ void sr_handlepacket(struct sr_instance* sr,
                 return;
         }
 }/* end sr_ForwardPacket */
+
+/* Function to process the logic behind the ARP Packet */
+int process_ARP(struct sr_instance* sr,
+                uint8_t * arpPacket /* lent */,
+                unsigned int arpLength,
+                char* interface /* lent */)
+{
+        printf("ARP packet processing block");
+        /* Sanity Check */
+        /* Check the correct length of a ARP packet
+         * arpLength = Ethernet Header + Arp Header
+         * both values can be found in sr_protocol.h */
+        int supposed_arpLength = sizeof(sr_ethernet_hdr) + sizeof(sr_arp_hdr);
+
+        if (arpLength < supposed_arpLength) {
+                fprintf(stderr, "invalid ARP length");
+                return -1;
+        }
+
+}
