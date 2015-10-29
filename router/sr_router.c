@@ -137,7 +137,7 @@ int process_IP(struct sr_instance* sr,
                 unsigned int ipLength,
                 char* interface /* lent */)
 {
-        printf("Entered ARP packet processing block \n");
+        printf("Entered IP packet processing block \n");
         /* Sanity Check */
         /* Check the correct length of a IP packet
          * ipLength = IP Header + IP Header
