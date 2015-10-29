@@ -190,15 +190,15 @@ int process_IP(struct sr_instance* sr,
                 sr_icmp_hdr_t *ICMP_header = (sr_icmp_hdr_t *) (ethernetHeaderSize + ipHeaderSize + ipPacket);
 
                 /* If it is not a echo request, we dont' do anything? */
-                if(ICMP_header->icmp_code! = 0 || ICMP_header->icmp_code!= 8){
+                if(ICMP_header->icmp_code != 0 || ICMP_header->icmp_code != 8){
                     printf("Not an echo request!\n");
                     return -1;
                 }
 
 
                 /* If it is a echo request, we send it */
-                if(ICMP_header->icmp_code! = 0 || ICMP_header->icmp_code! = 8){
-                    printf("Echo request")
+                if(ICMP_header->icmp_code != 0 || ICMP_header->icmp_code != 8){
+                    printf("Echo request!\n");
                     /* Send it here */
                 }
             }
@@ -235,13 +235,14 @@ int process_IP(struct sr_instance* sr,
             /* Traverse through the table and find the correct destination */
             while (currentRoutingTable != NULL){
                 /* Destination IP logical AND with a subnetmask == subnet address */
-                uint32_t packetDestination = ip_header->ip_dst & routing_table->mask.s_addr;
+                uint32_t packetDestination = ip_header->ip_dst & currentRoutingTable->mask.s_addr;
 
                 /* Check if it matches a routing table Destination */
-                if (packetDestination == routing_table->dest.s_addr){
+                if (packetDestination == currentRoutingTable->dest.s_addr){
                     struct sr_if* interface = sr_get_interface(sr, currentRoutingTable->interface);
                 }
 
+                currentRoutingTable = currentRoutingTable->next;
                 /* not sure what to do here */
             }
 
