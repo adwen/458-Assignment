@@ -187,7 +187,7 @@ int process_IP(struct sr_instance* sr,
                 printf("This IS a ICMP protocol");
 
                 /* Construct the header **/
-                sr_icmp_hdr_t *ICMP_header = (sr_icmp_hdr_t *) (ethernetHeaderSize + ipHeaderSize + ipPacket);
+                sr_icmp_hdr_t *ICMP_header = (sr_icmp_hdr_t *) (ipPacket + ethernetHeaderSize + ipHeaderSize);
 
                 /* If it is not a echo request, we dont' do anything? */
                 if(ICMP_header->icmp_code != 0 || ICMP_header->icmp_code != 8){
@@ -197,7 +197,7 @@ int process_IP(struct sr_instance* sr,
 
 
                 /* If it is a echo request, we send it */
-                if(ICMP_header->icmp_code != 0 || ICMP_header->icmp_code != 8){
+                if(ICMP_header->icmp_code == 0 || ICMP_header->icmp_code == 8){
                     printf("Echo request!\n");
                     /* Send it here */
                 }
@@ -241,9 +241,10 @@ int process_IP(struct sr_instance* sr,
                 if (packetDestination == currentRoutingTable->dest.s_addr){
                     struct sr_if* interface = sr_get_interface(sr, currentRoutingTable->interface);
                 }
-
-                currentRoutingTable = currentRoutingTable->next;
                 /* not sure what to do here */
+
+                /* Need to go to the next entry in table */
+                currentRoutingTable = currentRoutingTable->next;
             }
 
 
