@@ -158,7 +158,7 @@ int process_IP(struct sr_instance* sr,
         sr_ip_hdr_t *ip_header = (sr_ip_hdr_t *)(packet + ethernetHeaderSize);
 
         /* Sanity Check #2: Verify checksums via cksum() from sr_utils.c */
-        uint16_t cksum_result = cksum(ip_header, ip_header->ip_h1);
+        uint16_t cksum_result = cksum(ip_header, ip_header->ip_hl);
         if (!cksum_result) {
                 fprintf(stderr, "Checksum failed!\n");
                 return -1;
