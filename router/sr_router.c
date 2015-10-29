@@ -156,7 +156,7 @@ int process_IP(struct sr_instance* sr,
         }
 
         /* Construct the IP Header and deal with it */
-        sr_ip_hdr_t *ip_header = (sr_ip_hdr_t *)(packet + ethernetHeaderSize);
+        sr_ip_hdr_t *ip_header = (sr_ip_hdr_t *)(ipPacket + ethernetHeaderSize);
 
         /* Sanity Check #2: Verify checksums via cksum() from sr_utils.c */
         uint16_t cksum_result = cksum(ip_header, ip_header->ip_hl);
