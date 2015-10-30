@@ -231,6 +231,8 @@ int process_ARP(struct sr_instance* sr,
                 unsigned int arpLength,
                 char* interface /* lent */)
 {
+        int new_len;
+        struct sr_arpreq *tmp;
         printf("Entered ARP packet processing block \n");
         /* Sanity Check */
         /* Check the correct length of a ARP packet
@@ -257,23 +259,24 @@ int process_ARP(struct sr_instance* sr,
         {
             case arp_op_request:
                 /* Recieved an ARP request */
-                unsigned int new_len = sizeof(sr_ethernet_hdr_t) + sizeof(sr_arp_hdr_t);
-                void * new_packet = malloc(new_len);
+                new_len = sizeof(sr_ethernet_hdr_t) + sizeof(sr_arp_hdr_t);
+                void * new_packet;
+                new_packet = malloc(new_len);
                 bzero(new_packet, new_len);
                 sr_ethernet_hdr_t *eth_hdr = (sr_ethernet_hdr_t *) new_packet;
                 memset(eth_hdr->ether_dhost, 0xFF, ETHER_ADDR_LEN);
-                memcpy(eth_hdr->shost, sr_if->addr, ETHER_ADDR_LEN);
-                eth_hdr->ethertype = htons(sr_ethertype.ethertype_arp);
+                memcpy(eth_hdr->ether_shost, this_interface->addr, ETHER_ADDR_LEN);
+                eth_hdr->ether_type = htons(ethertype_arp);
 
                 sr_arp_hdr_t *arp_hdr = (sr_arp_hdr_t *) (new_packet + sizeof(sr_ethernet_hdr_t));
-                arp_hdr->arp_hln = ETHER_ADDR_LEN;
-                arp_hdr->arp_pln = 4;
-                arp_hdr->arp_hrd = htons(sr_arp_hrd_format.arp_hrd_ethernet);
-                arp_hdr->arp_pro = htons(sr_arp_opcode.arp_op_reply);
-                memcpy(arp_hdr->ar_sha, sr_if->addr, ETHER_ADDR_LEN);
-                memcpy(arp_hdr->ar_tha, sr_if->ar_tha, ETHER_ADDR_LEN);
-                arp_hdr->ar_sip = if_st->ip;
-                arp_hdr->ar_tip = ar_tip;
+                arp_hdr->ar_hln = ETHER_ADDR_LEN;
+                arp_hdr->ar_pln = 4;
+                arp_hdr->ar_hrd = htons(arp_hrd_ethernet);
+                arp_hdr->ar_pro = htons(arp_op_reply);
+                memcpy(arp_hdr->ar_sha, this_interface->addr, ETHER_ADDR_LEN);
+                memcpy(arp_hdr->ar_tha, arp_header->ar_tha, ETHER_ADDR_LEN);
+                arp_hdr->ar_sip = this_interface->ip;
+                arp_hdr->ar_tip = arp_header->ar_sip;
 
                 int ret = sr_send_packet(sr, new_packet, new_len, interface);
                 free(new_packet);
@@ -281,10 +284,10 @@ int process_ARP(struct sr_instance* sr,
                 break;
             case arp_op_reply:
                 /* Recieved an ARP reply */
-                if (sr_if){
-                    tmp = sr_arpcache_insert(&(sr->cache), arp_header->ar_sha, arp_header->ar_sip));
+                if (this_interface){
+                    tmp = sr_arpcache_insert(&(sr->cache), arp_header->ar_sha, arp_header->ar_sip);
                 } else {
-                    tmp = sr->cache.requets;
+                    tmp = sr->cache.requests;
                     while (tmp) {
                         if (tmp->ip != arp_hdr->ar_sip) tmp = tmp->next;
                     }
