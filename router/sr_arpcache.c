@@ -37,7 +37,7 @@ void sr_arpcache_sweepreqs(struct sr_instance *sr) {
         /* If it hasnt been sent in the past second, send a new arp request. */
         if ((current_time - req_time) > 1.0)
         {
-            struct sr_if* sr_interface = sr_get_ip_interface(sr, req->ip)
+            struct sr_if* sr_interface = sr_get_ip_interface(sr, req->ip);
             char* interface = "TEMP"; /* how to get this? */
             sr_ethernet_hdr_t new_eth_hdr;
             sr_arp_hdr_t new_arp_hdr;
