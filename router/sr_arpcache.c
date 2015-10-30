@@ -18,6 +18,43 @@
 */
 void sr_arpcache_sweepreqs(struct sr_instance *sr) { 
     /* Fill this in */
+    struct sr_arpcache *cache = &(sr->cache);
+    struct sr_arpreq *req = cache->requests;
+
+    /* Traverse linked list of arp requests */
+    while (req != 0)
+    {
+        time_t req_time = req->sent;
+        time_t current_time = time(NULL); /* get current time */
+        uint32_t req_num_sent = req->times_sent;
+
+        if (current_time < 0)
+        {
+            fprintf(stderr, "Can't get current time!\n" );
+            return;
+        }
+
+        /* If it hasnt been sent in the past second, resend it. */
+        if ((current_time - req_time) > 1.0)
+        {
+
+        }
+
+        /* 5 times with no response, send destination host unreachable*/
+        if (req_num_sent >= 5)
+        {
+            /* Somehow notify all packets waiting that this host is unreachable */
+            struct sr_packet* packet = req->packets;
+            /* Iterate over the linked list of packets that depend on this */
+            while (packet != 0)
+            {
+
+                packet = packet->next;
+            }
+        }
+
+        req = req->next;
+    }
 }
 
 /* You should not need to touch the rest of this code. */

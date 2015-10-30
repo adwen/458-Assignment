@@ -14,7 +14,9 @@
 #include <stdio.h>
 #include <assert.h>
 #include <arpa/inet.h>
-
+#include <string.h>
+#include <strings.h>
+#include <stdlib.h>
 
 #include "sr_if.h"
 #include "sr_rt.h"
@@ -80,7 +82,7 @@ int ICMP_message(struct sr_instance* sr, uint8_t *ICMP_Packet, char* interface, 
     /* Create the new packet now */
     printf("Creating Packet to send!\n");
     struct sr_if *iface = sr_get_interface(sr, interface);
-    unsigned int length = ipHeaderSize + ethernetHeaderSize; + icmpHeaderSize;
+    unsigned int length = ipHeaderSize + ethernetHeaderSize + icmpHeaderSize;
     uint8_t *newPacket = (uint8_t *) malloc(length);
     bzero(newPacket, length); /* I got this from stackovrflow, not really sure why though */
 
@@ -247,8 +249,21 @@ int process_ARP(struct sr_instance* sr,
         If it is, process and reply. Otherwise, discard. */
         struct sr_if* this_interface = sr_get_interface(sr, interface);
 
-        return 0; /* Temp: So make gcc doesn't lose it's shit */
+        if (arp_header->ar_tip != this_interface->ip)
+            return 1;
 
+        switch (arp_header->ar_op)
+        {
+            case arp_op_request:
+                break;
+            case arp_op_reply:
+                break;
+
+            default:
+                fprintf(stderr, "Incorrect ARP operation!\n");
+        }
+
+        return 0; /* Temp: So make gcc doesn't lose it's shit */
 
 }
 
