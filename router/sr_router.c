@@ -515,6 +515,7 @@ int process_IP(struct sr_instance* sr,
             /* Decrement TTL */
             ip_header->ip_ttl = ip_header->ip_ttl - 1;
             /* Check/Update Checksum */
+            ip_header->ip_sum = 0;
             ip_header->ip_sum = cksum(ip_header, ip_header->ip_hl * 4);
             /* Now that we know we can forward it since TTL allows it */
             /* We need to get a routing table */
@@ -528,7 +529,24 @@ int process_IP(struct sr_instance* sr,
 
                 /* Check if it matches a routing table Destination */
                 if (packetDestination == currentRoutingTable->dest.s_addr){
-                    struct sr_if* interface = sr_get_interface(sr, currentRoutingTable->interface);
+                    struct sr_if* dest_interface = sr_get_interface(sr, currentRoutingTable->interface);
+                    sr_ethernet_hdr_t ethernet_header = (sr_ethernet_hdr_t *) packet;
+                    memcpy(ethernet_header->ether_shost, dest_interface->addr, ETHER_ADDR_LEN);
+
+                    /* Check the ARP cache for the next-hop MAC address corresponding to the next-hop IP. */
+                    /* struct sr_arpentry *arp_e = sr_arpcache_lookup(&(sr->cache), rt_node->gw.s_addr); */
+                    struct sr_arpentry arp_match = sr_arpcache_lookup(&(sr->cache), currentRoutingTable->gw.s_addr);
+                    /* If it’s there, send it.  */
+                    if (arp_match != NULL){
+                        memcpy(ethernet_header->ether_dhost, arp_match->mac, ETHER_ADDR_LEN);
+                        free(arp_match);
+                        return sr_send_packet(sr, ipPacket, ipLength, routing_table->interface);
+                    }
+                    /* Otherwise, send an ARP request for the next-hop IP (if one hasn’t been sent within the last second), and add the packet to the queue of packets waiting on this ARP request. */
+                    else if (arp_match == NULL){
+                        /* Hanlde it here somehow*/
+                    }
+
                 }
 
                 /* Need to go to the next entry in table after everything is done*/
