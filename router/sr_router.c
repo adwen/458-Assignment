@@ -531,16 +531,16 @@ int process_IP(struct sr_instance* sr,
                     struct sr_if* interface = sr_get_interface(sr, currentRoutingTable->interface);
                 }
 
-                /* not sure what to do here */
-
                 /* Need to go to the next entry in table after everything is done*/
                 currentRoutingTable = currentRoutingTable->next;
             }
 
             /* If we leave the while loop without jumping to another function to destination couldnt be reached */
             /* send a message with type 3, code 1 */
-            type = 3; code = 1;
-            return ICMP_message3(sr, ipPacket, interface, type, code);
+            if (currentRoutingTable == NULL){
+                type = 3; code = 1;
+                return ICMP_message3(sr, ipPacket, interface, type, code);
+            }
         }
 
         return 0; /* Temp: So make gcc doesn't lose it's shit */
