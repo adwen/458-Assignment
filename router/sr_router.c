@@ -14,9 +14,9 @@
 #include <stdio.h>
 #include <assert.h>
 #include <arpa/inet.h>
+#include <string.h>
 #include <strings.h>
 #include <stdlib.h>
-
 
 #include "sr_if.h"
 #include "sr_rt.h"
