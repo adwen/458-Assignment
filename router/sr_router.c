@@ -196,7 +196,7 @@ void sr_handlepacket(struct sr_instance* sr,
         uint16_t packet_type = ethertype(packet);
         /* fill in code here */
         /* SANITY CHECK: Minimum Length is valid
-           Supposed ethernet frame length defined in sr_protocol.h
+           Supposed ethernet frame length defined in sr_pr otocol.h
            This denotes a frame that is insufficient length */
         if (len < sizeof(sr_ethernet_hdr_t)) {
                 fprintf(stderr, "Packet failed Sanity Check #1: ");
@@ -255,8 +255,60 @@ int process_ARP(struct sr_instance* sr,
         switch (arp_header->ar_op)
         {
             case arp_op_request:
+                /* Recieved an ARP request */
+                unsigned int new_len = sizeof(sr_ethernet_hdr_t) + sizeof(sr_arp_hdr_t);
+                void * new_packet = malloc(new_len);
+                bzero(new_packet, new_len);
+                sr_ethernet_hdr_t *eth_hdr = (sr_ethernet_hdr_t *) new_packet;
+                memset(eth_hdr->ether_dhost, 0xFF, ETHER_ADDR_LEN);
+                memcpy(eth_hdr->shost, sr_if->addr, ETHER_ADDR_LEN);
+                eth_hdr->ethertype = htons(sr_ethertype.ethertype_arp);
+
+                sr_arp_hdr_t *arp_hdr = (sr_arp_hdr_t *) (new_packet + sizeof(sr_ethernet_hdr_t));
+                arp_hdr->arp_hln = ETHER_ADDR_LEN;
+                arp_hdr->arp_pln = 4;
+                arp_hdr->arp_hrd = htons(sr_arp_hrd_format.arp_hrd_ethernet);
+                arp_hdr->arp_pro = htons(sr_arp_opcode.arp_op_reply);
+                memcpy(arp_hdr->ar_sha, sr_if->addr, ETHER_ADDR_LEN);
+                memcpy(arp_hdr->ar_tha, sr_if->ar_tha, ETHER_ADDR_LEN);
+                arp_hdr->ar_sip = if_st->ip;
+                arp_hdr->ar_tip = ar_tip;
+
+                int ret = sr_send_packet(sr, new_packet, new_len, interface);
+                free(new_packet);
+                return ret;
                 break;
             case arp_op_reply:
+                /* Recieved an ARP reply */
+                if (sr_if){
+                    tmp = sr_arpcache_insert(&(sr->cache), arp_header->ar_sha, arp_header->ar_sip));
+                } else {
+                    tmp = sr->cache.requets;
+                    while (tmp) {
+                        if (tmp->ip != arp_hdr->ar_sip) tmp = tmp->next;
+                    }
+                    if (!tmp) {
+                        fprintf(stderr, "ARP not for us.\n");
+                        return -1;
+                    }
+                }
+
+
+                struct sr_packet *temppacket = tmp->packets;
+                while (temppacket) {
+                    sr_ethernet_hdr_t *eth_hdr = (sr_ethernet_hdr_t *) temppacket->buf;
+                    struct sr_if *sending_if = sr_get_interface(sr, interface);
+                    memcpy(eth_hdr->ether_dhost, arp_hdr->ar_sha, ETHER_ADDR_LEN);
+                    memcpy(eth_hdr->ether_shost, sending_if->addr, ETHER_ADDR_LEN);
+                    sr_ip_hdr_t *ip_hdr = (sr_ip_hdr_t *) (temppacket->buf + sizeof(sr_ethernet_hdr_t));
+                    ip_hdr->ip_sum = 0;
+                    ip_hdr->ip_ttl -= 1;
+                    ip_hdr->ip_sum = cksum(ip_hdr, ip_hdr->ip_hl*4);
+                    sr_send_packet(sr, temppacket->buf, temppacket->len, interface);
+                    temppacket = temppacket->next;
+                }
+
+                sr_arpreq_destroy(&(sr->cache), tmp);
                 break;
 
             default:
