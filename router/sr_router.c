@@ -138,7 +138,7 @@ int ICMP_message(struct sr_instance* sr, uint8_t *ICMP_Packet, char* interface, 
         type3->icmp_type = type;
         type3->icmp_code = code;
         type3->icmp_sum = cksum(newPacket+ ethernetHeaderSize + ipHeaderSize, icmpHeaderSize);
-        memcpy(type3->data, ICMP_Packet + ethernetHeaderSize, ICMP_DATA_SIZE);
+        memcpy(type3->data, ICMP_Packet + ethernetHeaderSize, ip->ip_hl*4 + 8);
         printf("Done creating type 3 ICMP!\n");
 
         /* Send the Packet */
@@ -153,7 +153,7 @@ int ICMP_message(struct sr_instance* sr, uint8_t *ICMP_Packet, char* interface, 
         type11->icmp_type = type;
         type11->icmp_code = code;
         type11->icmp_sum = cksum(newPacket+ ethernetHeaderSize + ipHeaderSize, icmpHeaderSize);
-        memcpy(type11->data, ICMP_Packet + ethernetHeaderSize, ICMP_DATA_SIZE);
+        memcpy(type11->data, ICMP_Packet + ethernetHeaderSize, ip->ip_hl*4 + 8);
         printf("Done creating type 11 ICMP!\n");
 
         /* Send the Packet */
@@ -191,9 +191,8 @@ void sr_handlepacket(struct sr_instance* sr,
 
         printf("\n*** -> Received packet of length %d \n",len);
 
+        uint16_t packet_type = ethertype(packet);
         /* fill in code here */
-        /*sr_ethernet_hdr_t* header = (sr_ethernet_hdr_t*) packet; */
-
         /* SANITY CHECK: Minimum Length is valid
            Supposed ethernet frame length defined in sr_protocol.h
            This denotes a frame that is insufficient length */
@@ -202,25 +201,25 @@ void sr_handlepacket(struct sr_instance* sr,
                 return;
         } printf("Passed initial length test => Valid Ethernet Frame!\n");
 
+        /* Case where we receive a IP */
+        if (packet_type == ethertype_ip) {
+                printf("Packet is a IP packet!\n");
+                process_IP(sr, packet, len, interface);
+        }
+
         /* Case where we receive a ARP */
-        if (ethertype(packet) == ethertype_arp) {
+        if (packet_type == ethertype_arp) {
 
                 printf("Packet is a ARP!\n");
                 /* Pass all the parameters to the ARP function */
                 process_ARP(sr, packet, len, interface);
         }
 
-        /* Case where we receive a IP */
-        else if (ethertype(packet) == ethertype_ip) {
-                printf("Packet is a IP packet!\n");
-                process_IP(sr, packet, len, interface);
-        }
-
         else{
                 /* Invalid header */
                 fprintf(stderr, "Invalid Header!\n");
         }
-        return -1;
+        return;
 }/* end sr_ForwardPacket */
 
 /* Function to process the logic behind the ARP Packet */
