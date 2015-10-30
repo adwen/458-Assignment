@@ -535,7 +535,7 @@ int process_IP(struct sr_instance* sr,
 
                     /* Check the ARP cache for the next-hop MAC address corresponding to the next-hop IP. */
                     /* struct sr_arpentry *arp_e = sr_arpcache_lookup(&(sr->cache), rt_node->gw.s_addr); */
-                    struct sr_arpentry arp_match = sr_arpcache_lookup(&(sr->cache), currentRoutingTable->gw.s_addr);
+                    struct sr_arpentry *arp_match = sr_arpcache_lookup(&(sr->cache), currentRoutingTable->gw.s_addr);
                     /* If it’s there, send it.  */
                     if (arp_match != NULL){
                         memcpy(ethernet_header->ether_dhost, arp_match->mac, ETHER_ADDR_LEN);
