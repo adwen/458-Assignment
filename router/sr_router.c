@@ -256,8 +256,10 @@ int process_ARP(struct sr_instance* sr,
         switch (arp_header->ar_op)
         {
             case arp_op_request:
+                //Recieved an ARP request
                 break;
             case arp_op_reply:
+                //Recieved an ARP reply
                 break;
 
             default:

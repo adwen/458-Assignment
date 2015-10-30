@@ -37,7 +37,11 @@ void sr_arpcache_sweepreqs(struct sr_instance *sr) {
         /* If it hasnt been sent in the past second, resend it. */
         if ((current_time - req_time) > 1.0)
         {
-
+            
+            pthread_mutex_lock(&(req->lock));
+            req->sent = current_time;
+            req->times_sent++;
+            pthread_mutex_unlock(&(req->lock));
         }
 
         /* 5 times with no response, send destination host unreachable*/
