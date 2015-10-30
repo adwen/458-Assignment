@@ -37,7 +37,8 @@ void sr_arpcache_sweepreqs(struct sr_instance *sr) {
         /* If it hasnt been sent in the past second, send a new arp request. */
         if ((current_time - req_time) > 1.0)
         {
-            char* interface = "TEMP";
+            struct sr_if* sr_interface = sr_get_ip_interface(sr, req->ip)
+            char* interface = "TEMP"; /* how to get this? */
             sr_ethernet_hdr_t new_eth_hdr;
             sr_arp_hdr_t new_arp_hdr;
 
@@ -48,9 +49,10 @@ void sr_arpcache_sweepreqs(struct sr_instance *sr) {
             uint16_t ether_type;                 /* packet type ID
             */
 
-            new_eth_hdr.ether_dhost[0] = 0;
-            new_eth_hdr.ether_shost[0] = 0;
-            new_eth_hdr.ether_type = 0;
+            /* all arp requests go to 0xff */
+            memset(new_eth_hdr.ether_dhost, 0xff, ETHER_ADDR_LEN);
+            memcpy(new_eth_hdr.ether_shost, sr_interface->addr, ETHER_ADDR_LEN);
+            new_eth_hdr.ether_type = ethertype_arp;
 
             /* Setup the arp header struct */
             /*
@@ -65,11 +67,11 @@ void sr_arpcache_sweepreqs(struct sr_instance *sr) {
             uint32_t ar_tip;                /* target IP address
             */
 
-            new_arp_hdr.ar_hrd = 0;
-            new_arp_hdr.ar_pro = 0;
-            new_arp_hdr.ar_hln = 0;
-            new_arp_hdr.ar_pln = 0;
-            new_arp_hdr.ar_op = 0;
+            new_arp_hdr.ar_hrd = arp_hrd_ethernet;
+            new_arp_hdr.ar_pro = ethertype_ip;
+            new_arp_hdr.ar_hln = ETHER_ADDR_LEN;
+            new_arp_hdr.ar_pln = 4; /* ?? */
+            new_arp_hdr.ar_op = arp_op_request;
             new_arp_hdr.ar_sha[0] = 0;
             new_arp_hdr.ar_sip = 0;
             new_arp_hdr.ar_tha[0] = 0;
