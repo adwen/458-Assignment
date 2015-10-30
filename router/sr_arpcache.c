@@ -25,7 +25,7 @@ void sr_arpcache_sweepreqs(struct sr_instance *sr) {
     while (req != 0)
     {
         time_t req_time = req->sent;
-        time_t current_time = time(null); /* get current time */
+        time_t current_time = time(NULL); /* get current time */
         uint32_t req_num_sent = req->times_sent;
 
         if (current_time < 0)
