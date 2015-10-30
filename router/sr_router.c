@@ -530,7 +530,7 @@ int process_IP(struct sr_instance* sr,
                 /* Check if it matches a routing table Destination */
                 if (packetDestination == currentRoutingTable->dest.s_addr){
                     struct sr_if* dest_interface = sr_get_interface(sr, currentRoutingTable->interface);
-                    sr_ethernet_hdr_t ethernet_header = (sr_ethernet_hdr_t *) packet;
+                    sr_ethernet_hdr_t *ethernet_header = (sr_ethernet_hdr_t *) ipPacket;
                     memcpy(ethernet_header->ether_shost, dest_interface->addr, ETHER_ADDR_LEN);
 
                     /* Check the ARP cache for the next-hop MAC address corresponding to the next-hop IP. */
@@ -540,7 +540,7 @@ int process_IP(struct sr_instance* sr,
                     if (arp_match != NULL){
                         memcpy(ethernet_header->ether_dhost, arp_match->mac, ETHER_ADDR_LEN);
                         free(arp_match);
-                        return sr_send_packet(sr, ipPacket, ipLength, routing_table->interface);
+                        return sr_send_packet(sr, ipPacket, ipLength, currentRoutingTable->interface);
                     }
                     /* Otherwise, send an ARP request for the next-hop IP (if one hasn’t been sent within the last second), and add the packet to the queue of packets waiting on this ARP request. */
                     else if (arp_match == NULL){
