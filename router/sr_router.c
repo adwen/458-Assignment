@@ -58,13 +58,14 @@ int ICMP_message(struct sr_instance* sr, uint8_t *ICMP_Packet, char* interface, 
     int ethernetHeaderSize = sizeof(sr_ethernet_hdr_t);
     int ipHeaderSize = sizeof(sr_ip_hdr_t);
     int icmpHeaderSize = 0;  /* For now */
-    /* Need to construct a ICMP packet header */
+    /* Needed to construct a ICMP packet header */
     int max_size = ipHeaderSize + ethernetHeaderSize;
     /* Get the incoming packet passed to this function */
     sr_ip_hdr_t *pkt = (sr_ip_hdr_t *) (ICMP_Packet + ethernetHeaderSize);
 
     /* Structures defined in sr_protocol.h */
     /* if this part is wrong its probably cuz i defined the structures wrong size */
+    /* I wrote them in sr_protocol.h from http://www.networksorcery.com/enp/protocol/icmp.htm */
     if (type == 0){
         printf("TYPE 0 ICMP\n");
         icmpHeaderSize = ntohs(pkt->ip_len) - pkt->ip_hl*4;
@@ -78,6 +79,22 @@ int ICMP_message(struct sr_instance* sr, uint8_t *ICMP_Packet, char* interface, 
         icmpHeaderSize = sizeof(sr_icmp_t11_hdr_t);
     }
 
+    /* Create the new packet now */
+    struct sr_if *iface = sr_get_interface(sr, interface);
+    unsigned int length = max_size + icmpHeaderSize;
+    uint8_t *newPacket = (uint8_t *) malloc(length);
+    bzero(newPacket, length); /* I got this from stackovrflow, not really sure why though */
+
+    /* Create the IP header of the packet */
+    sr_ip_hdr_t *ip = (sr_ip_hdr_t *) (newPacket + ethernetHeaderSize);
+    ip->ip_dst = pkt->ip_src; /* Send back to where we got it from */
+    ip->ip_hl = 5;
+    ip->ip_id = pkt->ip_id;
+    ip->ip_p = ip_protocol_icmp; /* Sending icmp protocol */
+    ip->ip_src = iface->ip;
+    ip->ip_tos = pkt->ip_tos;
+    ip->ip_off = 0;
+    ip->ip_ttl = INIT_TTL;
     return 0;
 }
 
