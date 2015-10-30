@@ -125,7 +125,7 @@ int ICMP_message0(struct sr_instance* sr, uint8_t *ICMP_Packet, char* interface,
     return retval;
 }
 
-/* Method to handle ICMP Type 0 messages */
+/* Method to handle ICMP Type 3 messages */
 int ICMP_message3(struct sr_instance* sr, uint8_t *ICMP_Packet, char* interface, uint8_t type, uint8_t code){
     printf("Inside ICMP handling Block!\n");
     /* Useful Variables */
