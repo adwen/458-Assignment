@@ -214,14 +214,13 @@ void sr_handlepacket(struct sr_instance* sr,
         else if (ethertype(packet) == ethertype_ip) {
                 printf("Packet is a IP packet!\n");
                 process_IP(sr, packet, len, interface);
-                /* sr_send_packet(sr, packet, len, interface); */
         }
 
         else{
                 /* Invalid header */
                 fprintf(stderr, "Invalid Header!\n");
         }
-        return;
+        return -1;
 }/* end sr_ForwardPacket */
 
 /* Function to process the logic behind the ARP Packet */
@@ -292,9 +291,9 @@ int process_IP(struct sr_instance* sr,
 
         /* Construct the IP Header and deal with it */
         sr_ip_hdr_t *ip_header = (sr_ip_hdr_t *)(ipPacket + ethernetHeaderSize);
-
+        printf("Created IP header!\n");
         /* Sanity Check #2: Verify checksums via cksum() from sr_utils.c */
-        uint16_t cksum_result = cksum(ip_header, ntohl(ip_header->ip_hl));
+        uint16_t cksum_result = cksum(ip_header, ip_header->ip_hl);
         if (!cksum_result) {
                 fprintf(stderr, "Checksum failed!\n");
                 return -1;
@@ -305,7 +304,7 @@ int process_IP(struct sr_instance* sr,
 
         /* If the packet is for us: We process it */
         if (destination){
-            printf("Packet  is for us! \n");
+            printf("Packet is for us! \n");
 
             /* Check the protocol type */
             uint8_t protocol_type = ip_header->ip_p;
@@ -345,6 +344,7 @@ int process_IP(struct sr_instance* sr,
                 printf("This is not a ICMP Protocol!!!");
                 /* This is either TCP or UDP: Send port unreachable, type 3, code 3 */
                 type = 3; code = 3;
+                return ICMP_message(sr, ipPacket, interface, type, code);
             }
         }
 
@@ -382,15 +382,14 @@ int process_IP(struct sr_instance* sr,
                 }
                 /* not sure what to do here */
 
-                /* Need to go to the next entry in table */
+                /* Need to go to the next entry in table after everything is done*/
                 currentRoutingTable = currentRoutingTable->next;
             }
 
             /* If we leave the while loop without jumping to another function to destination couldnt be reached */
             /* send a message with type 3, code 1 */
             type = 3; code = 1;
-
-
+            return ICMP_message(sr, ipPacket, interface, type, code);
         }
 
         return 0; /* Temp: So make gcc doesn't lose it's shit */
