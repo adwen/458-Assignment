@@ -34,14 +34,62 @@ void sr_arpcache_sweepreqs(struct sr_instance *sr) {
             return;
         }
 
-        /* If it hasnt been sent in the past second, resend it. */
+        /* If it hasnt been sent in the past second, send a new arp request. */
         if ((current_time - req_time) > 1.0)
         {
-            
+            char* interface = "TEMP";
+            sr_ethernet_hdr_t new_eth_hdr;
+            sr_arp_hdr_t new_arp_hdr;
+
+            /* Setup the ethernet header struct */
+            /*
+            uint8_t ether_dhost[ETHER_ADDR_LEN]; /* destination ethernet address
+            uint8_t ether_shost[ETHER_ADDR_LEN]; /* source ethernet address
+            uint16_t ether_type;                 /* packet type ID
+            */
+
+            new_eth_hdr.ether_dhost[0] = 0;
+            new_eth_hdr.ether_shost[0] = 0;
+            new_eth_hdr.ether_type = 0;
+
+            /* Setup the arp header struct */
+            /*
+            unsigned short ar_hrd;          /* format of hardware address
+            unsigned short ar_pro;          /* format of protocol address
+            unsigned char ar_hln;           /* length of hardware address
+            unsigned char ar_pln;           /* length of protocol address
+            unsigned short ar_op;           /* ARP opcode (command)
+            unsigned char ar_sha[ETHER_ADDR_LEN]; /* sender hardware address
+            uint32_t ar_sip;                /* sender IP address
+            unsigned char ar_tha[ETHER_ADDR_LEN]; /* target hardware address
+            uint32_t ar_tip;                /* target IP address
+            */
+
+            new_arp_hdr.ar_hrd = 0;
+            new_arp_hdr.ar_pro = 0;
+            new_arp_hdr.ar_hln = 0;
+            new_arp_hdr.ar_pln = 0;
+            new_arp_hdr.ar_op = 0;
+            new_arp_hdr.ar_sha[0] = 0;
+            new_arp_hdr.ar_sip = 0;
+            new_arp_hdr.ar_tha[0] = 0;
+            new_arp_hdr.ar_tip = 0;
+
+            /* Use a buffer as temp storage for the new packet */
+            int buffersize = sizeof(sr_ethernet_hdr_t) + sizeof(sr_arp_hdr_t);
+            uint8_t* buffer = malloc(buffersize);
+
+            /* Put the contents of both structs into the packet buffer */
+            memcpy(buffer, &new_eth_hdr, sizeof(sr_ethernet_hdr_t));
+            memcpy(buffer + sizeof(sr_ethernet_hdr_t), &new_arp_hdr, sizeof(sr_arp_hdr_t));
+
+            sr_send_packet(sr, buffer, buffersize, interface);
+
             pthread_mutex_lock(&(req->lock));
             req->sent = current_time;
             req->times_sent++;
             pthread_mutex_unlock(&(req->lock));
+            free(buffer);
         }
 
         /* 5 times with no response, send destination host unreachable*/
