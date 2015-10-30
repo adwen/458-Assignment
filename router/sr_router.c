@@ -220,7 +220,7 @@ void sr_handlepacket(struct sr_instance* sr,
                 /* Invalid header */
                 fprintf(stderr, "Invalid Header!\n");
         }
-        return -1;
+        return;
 }/* end sr_ForwardPacket */
 
 /* Function to process the logic behind the ARP Packet */
@@ -249,9 +249,9 @@ int process_ARP(struct sr_instance* sr,
         struct sr_if* this_interface = sr_get_interface(sr, interface);
 
         if (arp_header->ar_tip != this_interface->ip)
-            return;
+            return 1;
 
-        switch (arp_header->arp_op)
+        switch (arp_header->ar_op)
         {
             case arp_op_request:
                 break;
