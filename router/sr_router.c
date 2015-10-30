@@ -249,8 +249,21 @@ int process_ARP(struct sr_instance* sr,
         If it is, process and reply. Otherwise, discard. */
         struct sr_if* this_interface = sr_get_interface(sr, interface);
 
-        return 0; /* Temp: So make gcc doesn't lose it's shit */
+        if (arp_header->ar_tip != this_interface->ip)
+            return;
 
+        switch (arp_header->arp_op)
+        {
+            case arp_op_request:
+                break;
+            case arp_op_reply:
+                break;
+
+            default:
+                fprintf(stderr, "Incorrect ARP operation!\n");
+        }
+
+        return 0; /* Temp: So make gcc doesn't lose it's shit */
 
 }
 
