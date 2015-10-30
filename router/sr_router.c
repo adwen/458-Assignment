@@ -51,6 +51,36 @@ void sr_init(struct sr_instance* sr)
 
 } /* -- sr_init -- */
 
+/* Method to handle ICMP messages */
+int ICMP_message(struct sr_instance* sr, uint8_t *ICMP_Packet, char* interface, uint8_t type, uint8_t code){
+    printf("Inside ICMP handling Block!\n");
+    /* Useful Variables */
+    int ethernetHeaderSize = sizeof(sr_ethernet_hdr_t);
+    int ipHeaderSize = sizeof(sr_ip_hdr_t);
+    int icmpHeaderSize = 0;  /* For now */
+    /* Need to construct a ICMP packet header */
+    int max_size = ipHeaderSize + ethernetHeaderSize;
+    /* Get the incoming packet passed to this function */
+    sr_ip_hdr_t *pkt = (sr_ip_hdr_t *) (ICMP_Packet + ethernetHeaderSize);
+
+    /* Structures defined in sr_protocol.h */
+    /* if this part is wrong its probably cuz i defined the structures wrong size */
+    if (type == 0){
+        printf("TYPE 0 ICMP\n");
+        icmpHeaderSize = ntohs(pkt->ip_len) - pkt->ip_hl*4;
+    }
+    if (type == 3){
+        printf("TYPE 3 ICMP\n");
+        icmpHeaderSize = sizeof(sr_icmp_t3_hdr_t);
+    }
+    if (type == 11){
+        printf("TYPE 11 ICMP\n");
+        icmpHeaderSize = sizeof(sr_icmp_t11_hdr_t);
+    }
+
+    return 0;
+}
+
 /*---------------------------------------------------------------------
  * Method: sr_handlepacket(uint8_t* p,char* interface)
  * Scope:  Global
@@ -149,6 +179,9 @@ int process_IP(struct sr_instance* sr,
                char* interface /* lent */)
 {
         printf("Entered IP packet processing block \n");
+
+        /* Variables */
+        uint8_t type = 0; uint8_t code = 0;
         /* Sanity Check */
         /* Check the correct length of a IP packet
          * ipLength = IP Header + IP Header
@@ -184,7 +217,7 @@ int process_IP(struct sr_instance* sr,
 
             /* If it is an ICMP protocol */
             if (protocol_type == ip_protocol_icmp){
-                printf("This IS a ICMP protocol");
+                printf("This IS a ICMP protocol!\n");
 
                 /* Construct the header **/
                 sr_icmp_hdr_t *ICMP_header = (sr_icmp_hdr_t *) (ipPacket + ethernetHeaderSize + ipHeaderSize);
@@ -195,18 +228,28 @@ int process_IP(struct sr_instance* sr,
                     return -1;
                 }
 
+                /* Check the checksum of the ICMP Header */
+                uint32_t icmp_checksum = ICMP_header->icmp_sum;
+                uint32_t ver_sum = cksum((uint8_t *) ICMP_header, ntohs(ip_header->ip_len) - ipHeaderSize);
+                if (icmp_checksum != ver_sum){
+                    fprintf(stderr, "ICMP checksum does not match! \n");
+                    return -1;
+                }
 
                 /* If it is a echo request, we send it */
                 if(ICMP_header->icmp_code == 0 || ICMP_header->icmp_code == 8){
                     printf("Echo request!\n");
                     /* Send it here */
+                    type = 0; code = 0;
+                    /* send_ICMP(sr, packet, interface, 0, 0) */
                 }
             }
 
             /* If it is not a ICMP protocol */
             else if(protocol_type != ip_protocol_icmp){
                 printf("This is not a ICMP Protocol!!!");
-                /* Do some sending response */
+                /* This is either TCP or UDP: Send port unreachable, type 3, code 3 */
+                type = 3; code = 3;
             }
         }
 
@@ -220,7 +263,8 @@ int process_IP(struct sr_instance* sr,
             if ((current_TTL - 1) <= 0){
                 printf("TTL: TIME EXCEEDED! Discarding Packet\n");
                 /* Need to send a icmp message with type 11, code 0 */
-                int type = 11; int code = 0;
+                type = 11; code = 0;
+                return ICMP_message(sr, ipPacket, interface, type, code);
             } printf("TTL check OK! \n");
 
             /* Decrement TTL */
@@ -246,6 +290,10 @@ int process_IP(struct sr_instance* sr,
                 /* Need to go to the next entry in table */
                 currentRoutingTable = currentRoutingTable->next;
             }
+
+            /* If we leave the while loop without jumping to another function to destination couldnt be reached */
+            /* send a message with type 3, code 1 */
+            type = 3; code = 1;
 
 
         }
