@@ -214,14 +214,13 @@ void sr_handlepacket(struct sr_instance* sr,
         else if (ethertype(packet) == ethertype_ip) {
                 printf("Packet is a IP packet!\n");
                 process_IP(sr, packet, len, interface);
-                /* sr_send_packet(sr, packet, len, interface); */
         }
 
         else{
                 /* Invalid header */
                 fprintf(stderr, "Invalid Header!\n");
         }
-        return;
+        return -1;
 }/* end sr_ForwardPacket */
 
 /* Function to process the logic behind the ARP Packet */
@@ -279,9 +278,9 @@ int process_IP(struct sr_instance* sr,
 
         /* Construct the IP Header and deal with it */
         sr_ip_hdr_t *ip_header = (sr_ip_hdr_t *)(ipPacket + ethernetHeaderSize);
-
+        printf("Created IP header!\n");
         /* Sanity Check #2: Verify checksums via cksum() from sr_utils.c */
-        uint16_t cksum_result = cksum(ip_header, ntohl(ip_header->ip_hl));
+        uint16_t cksum_result = cksum(ip_header, ip_header->ip_hl);
         if (!cksum_result) {
                 fprintf(stderr, "Checksum failed!\n");
                 return -1;
