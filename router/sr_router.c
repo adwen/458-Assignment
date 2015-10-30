@@ -544,7 +544,7 @@ int process_IP(struct sr_instance* sr,
                     }
                     /* Otherwise, send an ARP request for the next-hop IP (if one hasn’t been sent within the last second), and add the packet to the queue of packets waiting on this ARP request. */
                     else if (arp_match == NULL){
-                        /* Hanlde it here somehow*/
+                        /* Hanlde it here somehow */
                     }
 
                 }
