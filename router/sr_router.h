@@ -74,4 +74,15 @@ void sr_set_ether_ip(struct sr_instance* , uint32_t );
 void sr_set_ether_addr(struct sr_instance* , const unsigned char* );
 void sr_print_if_list(struct sr_instance* );
 
+/* Some function prototypes to get rid of warnings */
+int process_ARP(struct sr_instance* sr,
+                uint8_t * arpPacket /* lent */,
+                unsigned int arpLength,
+                char* interface /* lent */);
+
+int process_IP(struct sr_instance* sr,
+               uint8_t * ipPacket /* lent */,
+               unsigned int ipLength,
+               char* interface /* lent */);
+
 #endif /* SR_ROUTER_H */
