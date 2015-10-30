@@ -14,7 +14,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include <arpa/inet.h>
-#include <strings.h.>
+#include <strings.h>
 #include <stdlib.h>
 
 
