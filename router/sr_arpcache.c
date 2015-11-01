@@ -101,7 +101,7 @@ void sr_arpcache_sweepreqs(struct sr_instance *sr) {
             while (packet != 0)
             {
                 /* Send ICMP type 3 notification */
-                ICMP_message3(sr, packet->buf, packet->interface, 3, 1);
+                ICMP_message3(sr, packet->buf, packet->iface, 3, 1);
                 packet = packet->next;
             }
             sr_arpreq_destroy(cache, req);
