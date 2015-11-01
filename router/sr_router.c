@@ -496,7 +496,7 @@ int process_IP(struct sr_instance* sr,
         }
 
         /* Otherwise, if the packet is not intended for us */
-        /* Find out which entry in the routing table has the longest prefix match with the destination IP address.
+        /* Find out which entry in the routing table has the longest prefix match with the destination IP address. */
         /* Check the ARP cache for the next-hop MAC address corresponding to the next-hop IP. If it’s there, send it.  */
         /* Otherwise, send an ARP request for the next-hop IP (if one hasn’t been sent within the last second), and add the packet to the queue of packets waiting on this ARP request. */
         else if (!destination){

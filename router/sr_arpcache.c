@@ -14,6 +14,13 @@
 
 char* sr_get_charpointer_interface(struct sr_instance* sr, uint32_t ip)
 {
+    struct sr_rt* rt_node = sr->routing_table;
+    while (rt_node) {
+        if ((ip & rt_node->mask.s_addr) == rt_node->dest.s_addr) {
+            return rt_node->interface;
+        }
+        rt_node = rt_node->next;
+    }
 
     return NULL;
 }
@@ -44,19 +51,14 @@ void sr_arpcache_sweepreqs(struct sr_instance *sr) {
         /* If it hasnt been sent in the past second, send a new arp request. */
         if ((current_time - req_time) > 1.0)
         {
-            struct sr_if* this_interface = sr_get_ip_interface(sr, req->ip);
+            char* interface = sr_get_charpointer_interface(sr, req->ip);
+            struct sr_if* this_interface = sr_get_interface(sr, interface);
             struct sr_packet* this_packet = req->packets;
 
-            char* interface = this_packet->iface; /* how to get this? */
             sr_ethernet_hdr_t new_eth_hdr;
             sr_arp_hdr_t new_arp_hdr;
 
             /* Setup the ethernet header struct */
-            /*
-            uint8_t ether_dhost[ETHER_ADDR_LEN];  destination ethernet address
-            uint8_t ether_shost[ETHER_ADDR_LEN];  source ethernet address
-            uint16_t ether_type;                  packet type ID
-            */
 
             /* all arp requests go to 0xff */
             memset(new_eth_hdr.ether_dhost, 0xff, ETHER_ADDR_LEN);
@@ -64,18 +66,6 @@ void sr_arpcache_sweepreqs(struct sr_instance *sr) {
             new_eth_hdr.ether_type = ethertype_arp;
 
             /* Setup the arp header struct */
-            /*
-            unsigned short ar_hrd;                  format of hardware address
-            unsigned short ar_pro;                  format of protocol address
-            unsigned char ar_hln;                   length of hardware address
-            unsigned char ar_pln;                   length of protocol address
-            unsigned short ar_op;                   ARP opcode (command)
-            unsigned char ar_sha[ETHER_ADDR_LEN];   sender hardware address
-            uint32_t ar_sip;                        sender IP address
-            unsigned char ar_tha[ETHER_ADDR_LEN];   target hardware address
-            uint32_t ar_tip;                        target IP address
-            */
-
             new_arp_hdr.ar_hrd = arp_hrd_ethernet;
             new_arp_hdr.ar_pro = ethertype_ip;
             new_arp_hdr.ar_hln = ETHER_ADDR_LEN;
@@ -83,8 +73,7 @@ void sr_arpcache_sweepreqs(struct sr_instance *sr) {
             new_arp_hdr.ar_op = arp_op_request;
             memcpy(&(new_arp_hdr.ar_sha), this_interface->addr, ETHER_ADDR_LEN);
             new_arp_hdr.ar_sip = this_interface->ip;
-            /*memcpy();*/
-            new_arp_hdr.ar_tha[0] = 0;
+            memset(&(new_arp_hdr.ar_tha), 0, ETHER_ADDR_LEN);
             new_arp_hdr.ar_tip = req->ip;
 
             /* Use a buffer as temp storage for the new packet */
