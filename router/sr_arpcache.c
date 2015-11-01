@@ -10,6 +10,7 @@
 #include "sr_router.h"
 #include "sr_if.h"
 #include "sr_protocol.h"
+#include "sr_rt.h"
 
 
 char* sr_get_charpointer_interface(struct sr_instance* sr, uint32_t ip)
