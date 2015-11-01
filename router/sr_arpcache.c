@@ -42,6 +42,8 @@ void sr_arpcache_sweepreqs(struct sr_instance *sr) {
         time_t req_time = req->sent;
         time_t current_time = time(NULL); /* get current time */
         uint32_t req_num_sent = req->times_sent;
+        char* interface = sr_get_charpointer_interface(sr, req->ip);
+        struct sr_if* this_interface = sr_get_interface(sr, interface);
 
         if (current_time < 0)
         {
@@ -52,14 +54,9 @@ void sr_arpcache_sweepreqs(struct sr_instance *sr) {
         /* If it hasnt been sent in the past second, send a new arp request. */
         if ((current_time - req_time) > 1.0)
         {
-            char* interface = sr_get_charpointer_interface(sr, req->ip);
-            struct sr_if* this_interface = sr_get_interface(sr, interface);
-            struct sr_packet* this_packet = req->packets;
-
+            /* Setup the ethernet header struct */
             sr_ethernet_hdr_t new_eth_hdr;
             sr_arp_hdr_t new_arp_hdr;
-
-            /* Setup the ethernet header struct */
 
             /* all arp requests go to 0xff */
             memset(new_eth_hdr.ether_dhost, 0xff, ETHER_ADDR_LEN);
@@ -70,10 +67,11 @@ void sr_arpcache_sweepreqs(struct sr_instance *sr) {
             new_arp_hdr.ar_hrd = arp_hrd_ethernet;
             new_arp_hdr.ar_pro = ethertype_ip;
             new_arp_hdr.ar_hln = ETHER_ADDR_LEN;
-            new_arp_hdr.ar_pln = 4; /* ?? */
+            new_arp_hdr.ar_pln = 4; /* ??? */
             new_arp_hdr.ar_op = arp_op_request;
             memcpy(&(new_arp_hdr.ar_sha), this_interface->addr, ETHER_ADDR_LEN);
             new_arp_hdr.ar_sip = this_interface->ip;
+            /* Hardware address of target arp request is 0 */
             memset(&(new_arp_hdr.ar_tha), 0, ETHER_ADDR_LEN);
             new_arp_hdr.ar_tip = req->ip;
 
@@ -94,7 +92,7 @@ void sr_arpcache_sweepreqs(struct sr_instance *sr) {
             free(buffer);
         }
 
-        /* 5 times with no response, send destination host unreachable*/
+        /* 5 times with no response, send destination host unreachable and destroy request */
         else if (req_num_sent >= 5)
         {
             /* Somehow notify all packets waiting that this host is unreachable */
@@ -102,12 +100,11 @@ void sr_arpcache_sweepreqs(struct sr_instance *sr) {
             /* Iterate over the linked list of packets that depend on this */
             while (packet != 0)
             {
-
+                /* Send ICMP type 3 notification */
+                ICMP_message3(sr, packet->buf, packet->interface, 3, 1);
                 packet = packet->next;
             }
-            /* Send ICMP type 3 notification */
-
-            /*ICMP_message3(sr, uint8_t *ICMP_Packet, char* interface, uint8_t type, uint8_t code);*/
+            sr_arpreq_destroy(cache, req);
         }
 
         req = req->next;
