@@ -11,6 +11,7 @@
 #include "sr_if.h"
 #include "sr_protocol.h"
 #include "sr_rt.h"
+#include <arpa/inet.h>
 
 
 char* sr_get_charpointer_interface(struct sr_instance* sr, uint32_t ip)
@@ -55,27 +56,27 @@ void sr_arpcache_sweepreqs(struct sr_instance *sr) {
 
         /* If it hasnt been sent in the past second, send a new arp request. */
         if ((current_time - req_time) > 1.0)
-        {
-            /* Setup the ethernet header struct */
+        {            
             sr_ethernet_hdr_t new_eth_hdr;
             sr_arp_hdr_t new_arp_hdr;
+            /* Setup the ethernet header struct */
 
             /* all arp requests go to 0xff */
             memset(new_eth_hdr.ether_dhost, 0xff, ETHER_ADDR_LEN);
             memcpy(new_eth_hdr.ether_shost, this_interface->addr, ETHER_ADDR_LEN);
-            new_eth_hdr.ether_type = ethertype_arp;
+            new_eth_hdr.ether_type = htons(ethertype_arp);
 
             /* Setup the arp header struct */
-            new_arp_hdr.ar_hrd = arp_hrd_ethernet;
-            new_arp_hdr.ar_pro = ethertype_ip;
+            new_arp_hdr.ar_hrd = htons(arp_hrd_ethernet);
+            new_arp_hdr.ar_pro = htons(ethertype_ip);
             new_arp_hdr.ar_hln = ETHER_ADDR_LEN;
             new_arp_hdr.ar_pln = 4; /* ??? */
-            new_arp_hdr.ar_op = arp_op_request;
+            new_arp_hdr.ar_op = htons(arp_op_request);
             memcpy(&(new_arp_hdr.ar_sha), this_interface->addr, ETHER_ADDR_LEN);
-            new_arp_hdr.ar_sip = this_interface->ip;
+            new_arp_hdr.ar_sip = htonl(this_interface->ip);
             /* Hardware address of target arp request is 0 */
             memset(&(new_arp_hdr.ar_tha), 0, ETHER_ADDR_LEN);
-            new_arp_hdr.ar_tip = req->ip;
+            new_arp_hdr.ar_tip = htonl(req->ip);
 
             /* Use a buffer as temp storage for the new packet */
             int buffersize = sizeof(sr_ethernet_hdr_t) + sizeof(sr_arp_hdr_t);
