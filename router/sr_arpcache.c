@@ -35,10 +35,12 @@ void sr_arpcache_sweepreqs(struct sr_instance *sr) {
     /* Fill this in */
     struct sr_arpcache *cache = &(sr->cache);
     struct sr_arpreq *req = cache->requests;
+    struct sr_arpreq *nextreq = NULL;
 
     /* Traverse linked list of arp requests */
     while (req != 0)
     {
+        nextreq = req->next;
         time_t req_time = req->sent;
         time_t current_time = time(NULL); /* get current time */
         uint32_t req_num_sent = req->times_sent;
@@ -107,7 +109,7 @@ void sr_arpcache_sweepreqs(struct sr_instance *sr) {
             sr_arpreq_destroy(cache, req);
         }
 
-        req = req->next;
+        req = nextreq;
     }
 }
 
