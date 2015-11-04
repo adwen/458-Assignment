@@ -88,10 +88,10 @@ void sr_arpcache_sweepreqs(struct sr_instance *sr) {
 
             sr_send_packet(sr, buffer, buffersize, interface);
 
-            pthread_mutex_lock(&(cache->lock));
+            //pthread_mutex_lock(&(cache->lock));
             req->sent = current_time;
             req->times_sent++;
-            pthread_mutex_unlock(&(cache->lock));
+            //pthread_mutex_unlock(&(cache->lock));
             free(buffer);
         }
 
