@@ -73,10 +73,11 @@ void sr_arpcache_sweepreqs(struct sr_instance *sr) {
             new_arp_hdr.ar_pln = 4; /* ??? */
             new_arp_hdr.ar_op = htons(arp_op_request);
             memcpy(&(new_arp_hdr.ar_sha), this_interface->addr, ETHER_ADDR_LEN);
-            new_arp_hdr.ar_sip = htonl(this_interface->ip);
+            /* IP addresses are stored in network byte order? */
+            new_arp_hdr.ar_sip = this_interface->ip;
             /* Hardware address of target arp request is 0 */
             memset(&(new_arp_hdr.ar_tha), 0, ETHER_ADDR_LEN);
-            new_arp_hdr.ar_tip = htonl(req->ip);
+            new_arp_hdr.ar_tip = req->ip;
 
             /* Use a buffer as temp storage for the new packet */
             int buffersize = sizeof(sr_ethernet_hdr_t) + sizeof(sr_arp_hdr_t);
@@ -88,10 +89,10 @@ void sr_arpcache_sweepreqs(struct sr_instance *sr) {
 
             sr_send_packet(sr, buffer, buffersize, interface);
 
-            pthread_mutex_lock(&(cache->lock));
+            /*pthread_mutex_lock(&(cache->lock));*/
             req->sent = current_time;
             req->times_sent++;
-            pthread_mutex_unlock(&(cache->lock));
+            /*pthread_mutex_unlock(&(cache->lock));*/
             free(buffer);
         }
 
