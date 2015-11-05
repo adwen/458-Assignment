@@ -45,7 +45,7 @@ struct sr_instance
 {
     int  sockfd;   /* socket to server */
     char user[32]; /* user name */
-    char host[32]; /* host name */ 
+    char host[32]; /* host name */
     char template[30]; /* template name if any */
     unsigned short topo_id;
     struct sockaddr_in sr_addr; /* address to server */
@@ -85,22 +85,24 @@ int process_IP(struct sr_instance* sr,
                unsigned int ipLength,
                char* interface /* lent */);
 
-int ICMP_message0(struct sr_instance* sr, 
-                  uint8_t *ICMP_Packet,
+
+int ICMP_Message0(struct sr_instance* sr,
+                  uint8_t *packet,
                   char* interface,
                   uint8_t type,
                   uint8_t code);
 
-int ICMP_message3(struct sr_instance* sr, 
-                  uint8_t *ICMP_Packet,
+int ICMP_Message3(struct sr_instance* sr,
+                  uint8_t *packet,
                   char* interface,
                   uint8_t type,
                   uint8_t code);
 
-int ICMP_message11(struct sr_instance* sr, 
-                   uint8_t *ICMP_Packet,
+int ICMP_Message11(struct sr_instance* sr,
+                   uint8_t *packet,
                    char* interface,
                    uint8_t type,
                    uint8_t code);
+/* int sr_send_icmp(struct sr_instance* sr, uint8_t *packet, char* interface, uint8_t type, uint8_t code);*/
 
 #endif /* SR_ROUTER_H */
