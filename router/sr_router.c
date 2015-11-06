@@ -199,69 +199,77 @@
  }
 
  int process_ARP(struct sr_instance* sr, uint8_t *packet, unsigned int len, char* interface) {
- 	if (len < sizeof(sr_ethernet_hdr_t) + sizeof(sr_arp_hdr_t)) {
- 		fprintf(stderr, "Invalid ARP header size");
- 		return -1;
- 	}
 
- 	sr_arp_hdr_t *arp_hdr = (sr_arp_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t));
+         size_t ethernetHeaderSize = sizeof(sr_ethernet_hdr_t);
+         size_t arpHeaderSize = sizeof(sr_arp_hdr_t);
 
- 	if (arp_hdr->ar_hrd != htons(arp_hrd_ethernet)) {
- 		fprintf(stderr, "ARP hardware format not supported");
- 		return -1;
- 	}
+         if (len < ethernetHeaderSize + arpHeaderSize) {
+                 fprintf(stderr, "Invalid ARP header size");
+                 return -1;
+         }
 
- 	if (arp_hdr->ar_pro != htons(ethertype_ip)) {
- 		fprintf(stderr, "ARP header not valid: IPv4 only");
- 		return -1;
- 	}
+         sr_arp_hdr_t *arpHeader = (sr_arp_hdr_t *)(packet + ethernetHeaderSize);
 
- 	struct sr_if *target_if = sr_get_interface_from_ip(sr, arp_hdr->ar_tip);
- 	/* Reply or request? */
- 	if (arp_hdr->ar_op == htons(arp_op_request)) { /* request */
- 		if (!target_if) {
- 			Debug("ARP request NOT for our router\n");
- 			return -1;
- 		} else {
- 			Debug("ARP request for our router. Sending a reply...\n");
- 			return ARP_Message(sr, arp_op_reply, arp_hdr->ar_sha, arp_hdr->ar_sip);
- 		}
- 	} else { /* reply */
- 		/* Only cache if the target IP is one of our router's interfaces' IP address */
- 		Debug("Receive ARP reply at interface %s\n", interface);
- 		struct sr_arpreq *req = NULL;
- 		if(target_if) { /* Target is our router */
- 			req = sr_arpcache_insert(&(sr->cache), arp_hdr->ar_sha, arp_hdr->ar_sip);
- 		} else {
- 			req = sr->cache.requests;
- 			while (req) {
- 				if (req->ip != arp_hdr->ar_sip)
- 					req = req->next;
- 			}
- 			if (!req) {
- 				fprintf(stderr, "We don't have anything to do with this ARP reply.");
- 				return -1;
- 			}
- 		}
+         if (arpHeader->ar_hrd != htons(arp_hrd_ethernet)) {
+                 fprintf(stderr, "ARP hardware format not supported");
+                 return -1;
+         }
 
- 		struct sr_packet *pk_st = req->packets;
- 		while (pk_st) {
- 			sr_ethernet_hdr_t *ehdr_pk = (sr_ethernet_hdr_t *) pk_st->buf;
- 			struct sr_if *sending_if = sr_get_interface(sr, interface);
- 			memcpy(ehdr_pk->ether_dhost, arp_hdr->ar_sha, ETHER_ADDR_LEN);
- 			memcpy(ehdr_pk->ether_shost, sending_if->addr, ETHER_ADDR_LEN);
- 			sr_ip_hdr_t *ip_hdr = (sr_ip_hdr_t *) (pk_st->buf + sizeof(sr_ethernet_hdr_t));
- 			ip_hdr->ip_sum = 0;
- 			ip_hdr->ip_ttl -= 1;
- 			ip_hdr->ip_sum = cksum(ip_hdr, ip_hdr->ip_hl*4);
- 			sr_send_packet(sr, pk_st->buf, pk_st->len, interface);
- 			pk_st = pk_st->next;
- 		}
+         if (arpHeader->ar_pro != htons(ethertype_ip)) {
+                 fprintf(stderr, "ARP header not valid: IPv4 only");
+                 return -1;
+         }
 
- 		sr_arpreq_destroy(&(sr->cache), req);
- 	}
+         struct sr_if *thisInterface = sr_get_ip_interface(sr, arpHeader->ar_tip);
+         /* Reply or request? */
 
- 	return 0;
+         if (arpHeader->ar_op == htons(arp_op_reply)) { /* reply */
+                 /* Only cache if the target IP is one of our router's interfaces' IP address */
+                 Debug("Receive ARP reply at interface %s\n", interface);
+                 struct sr_arpreq *req = NULL;
+                 if(thisInterface != NULL) { /* Target is our router */
+                         req = sr_arpcache_insert(&(sr->cache), arpHeader->ar_sha, arpHeader->ar_sip);
+                 }
+                 else if(thisInterface == NULL){
+                         req = sr->cache.requests;
+                         while (req) {
+                                 if (req->ip != arpHeader->ar_sip)
+                                         req = req->next;
+                         }
+                         if (!req) {
+                                 fprintf(stderr, "We don't have anything to do with this ARP reply.");
+                                 return -1;
+                         }
+                 }
+
+                 struct sr_packet *pk_st = req->packets;
+                 while (pk_st) {
+                         sr_ethernet_hdr_t *ehdr_pk = (sr_ethernet_hdr_t *) pk_st->buf;
+                         struct sr_if *sending_if = sr_get_interface(sr, interface);
+                         memcpy(ehdr_pk->ether_dhost, arpHeader->ar_sha, ETHER_ADDR_LEN);
+                         memcpy(ehdr_pk->ether_shost, sending_if->addr, ETHER_ADDR_LEN);
+                         sr_ip_hdr_t *ip_hdr = (sr_ip_hdr_t *) (pk_st->buf + ethernetHeaderSize);
+                         ip_hdr->ip_sum = 0;
+                         ip_hdr->ip_ttl -= 1;
+                         ip_hdr->ip_sum = cksum(ip_hdr, ip_hdr->ip_hl*4);
+                         sr_send_packet(sr, pk_st->buf, pk_st->len, interface);
+                         pk_st = pk_st->next;
+                 }
+
+                 sr_arpreq_destroy(&(sr->cache), req);
+         }
+
+         if (arpHeader->ar_op == htons(arp_op_request)) { /* request */
+                 if (!thisInterface) {
+                         Debug("ARP request NOT for our router\n");
+                         return -1;
+                 } else {
+                         Debug("ARP request for our router. Sending a reply...\n");
+                         return ARP_Message(sr, arp_op_reply, arpHeader->ar_sha, arpHeader->ar_sip);
+                 }
+         }
+
+         return 0;
  }
 
  int process_IP(struct sr_instance* sr, uint8_t * packet, unsigned int len, char* interface) {
@@ -280,7 +288,7 @@
  		return -1;
  	}
 
- 	struct sr_if *target_if = sr_get_interface_from_ip(sr, ip_hdr->ip_dst);
+ 	struct sr_if *target_if = sr_get_ip_interface(sr, ip_hdr->ip_dst);
 
  	if (!target_if) { /* not for us, forward it */
  		if(ip_hdr->ip_ttl <= 1) {
@@ -289,7 +297,7 @@
  			return ICMP_Message(sr, packet, interface, 11, 0);
  		}
 
- 		Debug("The Ip packet is not for us. Forwarding...\n");
+ 		printf("The Ip packet is not for us. Forwarding...\n");
  		struct sr_rt *rt_node = sr->routing_table;
  		while(rt_node) {
  			if ((ip_hdr->ip_dst & rt_node->mask.s_addr) == rt_node->dest.s_addr) {
@@ -318,7 +326,7 @@
  		return ICMP_Message(sr, packet, interface, 3, 1);
 
  	} else { /* handle it */
- 		Debug("The IP packet is for us\n");
+ 		printf("The IP packet is for us\n");
  		if (ip_hdr->ip_p != ip_protocol_icmp) {
  			Debug("Not ICMP protocol");
  			return ICMP_Message(sr, packet, interface, 3, 3); /* port unreachable */
