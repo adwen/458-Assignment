@@ -94,6 +94,7 @@ void sr_arpcache_sweepreqs(struct sr_instance *sr) {
             req->times_sent++;
             /*pthread_mutex_unlock(&(cache->lock));*/
             free(buffer);
+            printf("Sending ARP request packet to IP %u\n", req->ip);
         }
 
         /* 5 times with no response, send destination host unreachable and destroy request */
@@ -109,6 +110,7 @@ void sr_arpcache_sweepreqs(struct sr_instance *sr) {
                 packet = packet->next;
             }
             sr_arpreq_destroy(cache, req);
+            printf("Destroying ARP request with IP %u\n", req->ip);
         }
 
         req = nextreq;
