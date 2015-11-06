@@ -193,23 +193,22 @@ void sr_print_if(struct sr_if* iface)
         Debug("\tinet addr %s\n",inet_ntoa(ip_addr));
 } /* -- sr_print_if -- */
 
-/* Adapted from sr_get_interface */
-struct sr_if* sr_get_ip_interface(struct sr_instance *sr, uint32_t ip_dest) {
+/* Adapted from sr_get_interface inside sr_if.c*/
+struct sr_if* sr_get_ip_interface(struct sr_instance *sr, uint32_t ip_destination) {
 
         struct sr_if* if_walker = 0;
         /* -- REQUIRES -- */
         assert(sr);
-
         if_walker = sr->if_list;
 
         while(if_walker)
         {
-                if (if_walker->ip == ip_dest) {
+                if (if_walker->ip == ip_destination) {
                         return if_walker;
                 }
                 else{
                         if_walker = if_walker->next;
                 }
         }
-        return 0;
+        return NULL;
 }
