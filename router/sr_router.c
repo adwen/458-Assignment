@@ -79,8 +79,8 @@ int ICMP_Message0(struct sr_instance* sr, uint8_t *packet, char* interface, uint
 
     /* Construct IP header */
 	sr_ip_hdr_t *ip = (sr_ip_hdr_t *) (newPacket + ethernetHeaderSize);
-    ip->ip_hl = 5;
-    ip->ip_v = 4;
+    /*ip->ip_hl = 5;
+    ip->ip_v = 4;*/
     ip->ip_tos = 0;
     ip->ip_len = htons(20 + icmpHeaderSize);
     ip->ip_id = 0;
@@ -89,7 +89,7 @@ int ICMP_Message0(struct sr_instance* sr, uint8_t *packet, char* interface, uint
     ip->ip_p = ip_protocol_icmp;
 	ip->ip_dst = currentIP->ip_src;
 	ip->ip_src = currentInterface->ip;
-	ip->ip_sum = cksum(newPacket + ethernetHeaderSize, ip->ip_hl * 4);
+	ip->ip_sum = htons(cksum(newPacket + ethernetHeaderSize, ip->ip_hl * 4));
 
 	/* Construct ICMP Type 0 header */
 	sr_icmp_t0_hdr_t *currentICMP = (sr_icmp_t0_hdr_t *) (packet + ethernet_and_ip); /* Needed since we ECHO */
@@ -130,8 +130,8 @@ int ICMP_Message3(struct sr_instance* sr, uint8_t *packet, char* interface, uint
 
     /* Construct IP header */
 	sr_ip_hdr_t *ip = (sr_ip_hdr_t *) (newPacket + ethernetHeaderSize);
-    ip->ip_hl = 5;
-    ip->ip_v = 4;
+    /*ip->ip_hl = 5;
+    ip->ip_v = 4;*/
     ip->ip_tos = 0;
     ip->ip_len = htons(20 + icmpHeaderSize);
     ip->ip_id = 0;
@@ -140,7 +140,7 @@ int ICMP_Message3(struct sr_instance* sr, uint8_t *packet, char* interface, uint
     ip->ip_p = ip_protocol_icmp;
 	ip->ip_dst = currentIP->ip_src;
 	ip->ip_src = currentInterface->ip;
-	ip->ip_sum = cksum(newPacket + ethernetHeaderSize, ip->ip_hl * 4);
+	ip->ip_sum = htons(cksum(newPacket + ethernetHeaderSize, ip->ip_hl * 4));
 
 
     /* Consturc ICMP Type 3 header */
@@ -178,8 +178,8 @@ int ICMP_Message11(struct sr_instance* sr, uint8_t *packet, char* interface, uin
 
     /* Construct IP header */
 	sr_ip_hdr_t *ip = (sr_ip_hdr_t *) (newPacket + ethernetHeaderSize);
-    ip->ip_hl = 5;
-    ip->ip_v = 4;
+    /*ip->ip_hl = 5;
+    ip->ip_v = 4;*/
     ip->ip_tos = 0;
     ip->ip_len = htons(20 + icmpHeaderSize);
     ip->ip_id = 0;
@@ -188,7 +188,7 @@ int ICMP_Message11(struct sr_instance* sr, uint8_t *packet, char* interface, uin
     ip->ip_p = ip_protocol_icmp;
 	ip->ip_dst = currentIP->ip_src;
 	ip->ip_src = currentInterface->ip;
-	ip->ip_sum = cksum(newPacket + ethernetHeaderSize, ip->ip_hl * 4);
+	ip->ip_sum = htons(cksum(newPacket + ethernetHeaderSize, ip->ip_hl * 4));
 
     /* Construct ICMP Type 11header */
 	sr_icmp_t11_hdr_t *icmpType11 = (sr_icmp_t11_hdr_t *) (newPacket + ethernet_and_ip);
@@ -389,7 +389,7 @@ int process_ARP(struct sr_instance* sr,
                 /* Create IP Header */
                 sr_ip_hdr_t *ip_header = (sr_ip_hdr_t *) (request->packets->buf + ethernetHeaderSize);
                 ip_header->ip_sum = 0;
-                ip_header->ip_sum = cksum(ip_header, ip_header->ip_hl*4);
+                ip_header->ip_sum = htons(cksum(ip_header, ip_header->ip_hl*4));
                 ip_header->ip_ttl = ip_header->ip_ttl - 1;
 
                 /* Create Ethernet Header*/
@@ -558,7 +558,7 @@ int process_IP(struct sr_instance* sr,
                         ip_header->ip_ttl = ip_header->ip_ttl - 1;
                         /* Check/Update Checksum */
                         ip_header->ip_sum = 0;
-                        ip_header->ip_sum = cksum(ip_header, ip_header->ip_hl*4);
+                        ip_header->ip_sum = htons(cksum(ip_header, ip_header->ip_hl*4));
                         printf("\t\t\t\tMatch Found: Sending IP Packet !\n");
                         return sr_send_packet(sr, ipPacket, ipLength, currentRoutingTable->interface);
                     }
