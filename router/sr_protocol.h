@@ -96,7 +96,7 @@ struct sr_icmp_t0_hdr {
   uint16_t icmp_identifier;
   uint16_t seqnum;
   uint16_t timestamp;
-  uint16_t data[ICMP_DATA_SIZE];
+  uint16_t data[ICMP_DATA_SIZE/2];
 } __attribute__ ((packed)) ;
 typedef struct sr_icmp_t0_hdr sr_icmp_t0_hdr_t;
 
@@ -107,8 +107,8 @@ struct sr_icmp_t3_hdr {
   uint8_t icmp_code;
   uint16_t icmp_sum;
   uint16_t unused;
-  uint16_t next_hop_mtu;
-  uint32_t data[ICMP_DATA_SIZE];
+  uint16_t next_mtu;
+  uint32_t data[ICMP_DATA_SIZE/4];
 } __attribute__ ((packed)) ;
 typedef struct sr_icmp_t3_hdr sr_icmp_t3_hdr_t;
 
@@ -119,7 +119,7 @@ struct sr_icmp_t11_hdr {
   uint8_t icmp_code;
   uint16_t icmp_sum;
   uint32_t unused;
-  uint32_t data[ICMP_DATA_SIZE];
+  uint32_t data[ICMP_DATA_SIZE/4];
 } __attribute__ ((packed)) ;
 typedef struct sr_icmp_t11_hdr sr_icmp_t11_hdr_t;
 
