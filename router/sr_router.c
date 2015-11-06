@@ -290,10 +290,10 @@ void sr_handlepacket(struct sr_instance* sr,
         printf("\n*** -> Received packet of length %d \n",len);
 
         uint16_t packet_type = ethertype(packet);
-        size_t ethernetHeaderSize = sizeof(sr_ethernet_hdr_t);
+        unsigned int ethernetHeaderSize = sizeof(sr_ethernet_hdr_t);
         /* fill in code here */
         /* SANITY CHECK: Minimum Length is valid
-           Supposed ethernet frame length defined in sr_pr otocol.h
+           Supposed ethernet frame length defined in sr_protocol.h
            This denotes a frame that is insufficient length */
         if (len < ethernetHeaderSize) {
                 fprintf(stderr, "Packet failed Sanity Check #1: ");
@@ -463,7 +463,7 @@ int process_IP(struct sr_instance* sr,
         } printf("IP Header passed checksum test!\n");
 
         /* Get the IP interface: Implemented in sr_if.c */
-        struct sr_if *destination = sr_get_ip_interface(sr, ntohl(ip_header->ip_dst));
+        struct sr_if *destination = sr_get_ip_interface(sr, ip_header->ip_dst);
 
         /* If the packet is for us: We process it */
         if (destination != NULL){
