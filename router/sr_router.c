@@ -145,42 +145,55 @@
  }
 
  /* Logic to send an ARP Message */
- int ARP_Message(struct sr_instance* sr, unsigned short ar_op, unsigned char ar_tha[ETHER_ADDR_LEN], uint32_t ar_tip) {
- 	unsigned int len_new = sizeof(sr_ethernet_hdr_t) + sizeof(sr_arp_hdr_t);
- 	uint8_t *packet_new = (uint8_t *)malloc(len_new);
- 	bzero(packet_new, len_new);
- 	char *interface = sr_get_charpointer_interface(sr, ar_tip);
- 	struct sr_if *if_st = sr_get_interface(sr, interface);
+ int ARP_Message(
+         struct sr_instance* sr,
+         unsigned short opCode,
+         unsigned char targetHardwareAddress[ETHER_ADDR_LEN],
+         uint32_t targetIP)
+ {
+    /* Variables */
+    size_t ethernetHeaderSize = sizeof(sr_ethernet_hdr_t);
+    size_t arpHeaderSize = sizeof(sr_arp_hdr_t);
 
- 	/* ethernet frame */
- 	sr_ethernet_hdr_t *ehdr = (sr_ethernet_hdr_t *) packet_new;
- 	if (ar_op == arp_op_request)
- 		memset(ehdr->ether_dhost, 0xff, ETHER_ADDR_LEN);
- 	else
- 		memcpy(ehdr->ether_dhost, ar_tha, ETHER_ADDR_LEN);
+    /* initialize the ARP Message packet */
+    uint8_t *arpPacket = (uint8_t *)malloc(ethernetHeaderSize + arpHeaderSize);
+    bzero(arpPacket, ethernetHeaderSize + arpHeaderSize);
 
- 	memcpy(ehdr->ether_shost, if_st->addr, ETHER_ADDR_LEN);
- 	ehdr->ether_type = htons(ethertype_arp);
+    /* Get the interfaces */
+    char *interface = sr_get_charpointer_interface(sr, targetIP);
+    struct sr_if *sendingInterface = sr_get_interface(sr, interface);
 
- 	/* arp header */
- 	sr_arp_hdr_t *arp_hdr = (sr_arp_hdr_t *) (packet_new + sizeof(sr_ethernet_hdr_t));
- 	arp_hdr->ar_hln = ETHER_ADDR_LEN;
- 	arp_hdr->ar_hrd = htons(arp_hrd_ethernet);
- 	arp_hdr->ar_op = htons(ar_op);
- 	arp_hdr->ar_pln = 4;
- 	arp_hdr->ar_pro = htons(ethertype_ip);
- 	memcpy(arp_hdr->ar_sha, if_st->addr, ETHER_ADDR_LEN);
- 	arp_hdr->ar_sip = if_st->ip;
- 	memcpy(arp_hdr->ar_tha, ar_tha, ETHER_ADDR_LEN);
- 	arp_hdr->ar_tip = ar_tip;
+    /* Create the ethernet frame header from the arpPacket */
+    sr_ethernet_hdr_t *ethernetHeader = (sr_ethernet_hdr_t *) arpPacket;
+    /* If ARP reply */
+    if (opCode == arp_op_reply){
+        memcpy(ethernetHeader->ether_dhost, targetHardwareAddress, ETHER_ADDR_LEN);
+    }
+    /* If ARP Request */
+    if (opCode == arp_op_request){
+        memset(ethernetHeader->ether_dhost, 0xff, ETHER_ADDR_LEN);
+    }
+    memcpy(ethernetHeader->ether_shost, sendingInterface->addr, ETHER_ADDR_LEN);
+    ethernetHeader->ether_type = htons(ethertype_arp);
 
- 	Debug("*** Sending an ARP packet ***\n");
- 	/*print_hdrs(packet_new, len_new); */
+    /* Construct the arp header from the arpPacket */
+    sr_arp_hdr_t *arpHeader = (sr_arp_hdr_t *) (arpPacket + ethernetHeaderSize);
+    arpHeader->ar_hrd = htons(arp_hrd_ethernet);
+    arpHeader->ar_pro = htons(ethertype_ip);
+    arpHeader->ar_hln = ETHER_ADDR_LEN;
+    arpHeader->ar_pln = 4;
+    arpHeader->ar_op = htons(opCode);
+    memcpy(arpHeader->ar_sha, sendingInterface->addr, ETHER_ADDR_LEN);
+    arpHeader->ar_sip = sendingInterface->ip;
+    memcpy(arpHeader->ar_tha, targetHardwareAddress, ETHER_ADDR_LEN);
+    arpHeader->ar_tip = targetIP;
 
- 	int result = sr_send_packet(sr, packet_new, len_new, interface);
- 	free(packet_new);
- 	return result;
+    printf("Sending Out ARP Packet!\n");
+    int retval = sr_send_packet(sr, arpPacket, ethernetHeaderSize + arpHeaderSize, interface);
+    free(arpPacket);
+    return retval;
  }
+
 
 /* Logic to handle a Incoming ARP Packet */
 int process_ARP(struct sr_instance* sr, uint8_t *packet, unsigned int len, char* interface) {
@@ -232,12 +245,12 @@ int process_ARP(struct sr_instance* sr, uint8_t *packet, unsigned int len, char*
                   while (arpPackets) {
 
                           /* Get the interface to send to */
-                          struct sr_if *destinationInterface = sr_get_interface(sr, interface);
+                          struct sr_if *sendingInterface = sr_get_interface(sr, interface);
 
                           /* Construct Ethernet Header from Packet */
                           sr_ethernet_hdr_t *ethernetHeader = (sr_ethernet_hdr_t *) arpPackets->buf;
                           memcpy(ethernetHeader->ether_dhost, arpHeader->ar_sha, ETHER_ADDR_LEN);
-                          memcpy(ethernetHeader->ether_shost, destinationInterface->addr, ETHER_ADDR_LEN);
+                          memcpy(ethernetHeader->ether_shost, sendingInterface->addr, ETHER_ADDR_LEN);
 
                           /* Construct IP Header with Updated IP TTL and CKsum */
                           sr_ip_hdr_t *ipHeader = (sr_ip_hdr_t *) (arpPackets->buf + ethernetHeaderSize);
@@ -317,9 +330,9 @@ int process_IP(struct sr_instance* sr, uint8_t * packet, unsigned int len, char*
                                  printf("Routing Match Found!\n");
 
                                  /* Get the interface for that match and set it as the ethernet shost*/
-                                 struct sr_if *destinationInterface = sr_get_interface(sr,
+                                 struct sr_if *sendingInterface = sr_get_interface(sr,
                                                                       routingEntryPointer->interface);
-                                 memcpy(ethernetHeader->ether_shost, destinationInterface->addr, ETHER_ADDR_LEN);
+                                 memcpy(ethernetHeader->ether_shost, sendingInterface->addr, ETHER_ADDR_LEN);
 
                                  /* Check ARP Cache for next hop MAC address for next hop IP (Longest PRefix) */
                                  struct sr_arpentry *cacheEntry = sr_arpcache_lookup(&(sr->cache),
