@@ -210,5 +210,6 @@ struct sr_if* sr_get_ip_interface(struct sr_instance *sr, uint32_t ip_destinatio
                         if_walker = if_walker->next;
                 }
         }
+        printf("IP %d not found in interface cache!\n", ip_destination);
         return NULL;
 }

@@ -476,7 +476,7 @@ int process_IP(struct sr_instance* sr,
                 printf("This IS a ICMP protocol!\n");
 
                 /* Construct the header to check if it is echo request */
-                sr_icmp_hdr_t *ICMP_header = (sr_icmp_hdr_t *) (ipPacket + ethernetHeaderSize + ipHeaderSize);
+                sr_icmp_hdr_t *ICMP_header = (sr_icmp_hdr_t *) (ipPacket + minimum_ipLength);
 
                 /* Check the checksum of the ICMP Header */
                 uint32_t icmp_checksum = ICMP_header->icmp_sum;
