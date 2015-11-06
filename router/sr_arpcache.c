@@ -14,17 +14,38 @@
 #include <arpa/inet.h>
 
 
-char* sr_get_charpointer_interface(struct sr_instance* sr, uint32_t ip)
-{
-    struct sr_rt* rt_node = sr->routing_table;
-    while (rt_node) {
-        if ((ip & rt_node->mask.s_addr) == rt_node->dest.s_addr) {
-            return rt_node->interface;
-        }
-        rt_node = rt_node->next;
-    }
+char * sr_get_charpointer_interface(struct sr_instance *sr, uint32_t ip) {
+	struct sr_rt *rt_node = sr->routing_table;
+	while (rt_node) {
+		if ((ip & rt_node->mask.s_addr) == rt_node->dest.s_addr) {
+			return rt_node->interface;
+		}
+		rt_node = rt_node->next;
+	}
 
-    return NULL;
+	return NULL;
+}
+
+void handle_arpreq(struct sr_instance *sr, struct sr_arpreq *req) {
+	if (difftime(time(NULL), req->sent) > 1) {
+		if (req->times_sent >= 5) { /* send ICMP Destination host unreachable */
+			struct sr_packet *pk = req->packets;
+			while (pk) {
+				ICMP_Message(sr, pk->buf, pk->iface, 3, 1);
+				pk = pk->next;
+			}
+			sr_arpreq_destroy(&(sr->cache), req);
+		} else {
+			unsigned char arp_th[6];
+			memset(arp_th, 0, ETHER_ADDR_LEN);
+			ARP_Message(sr, arp_op_request, arp_th, req->ip);
+			struct sr_arpcache *cache = &(sr->cache);
+			pthread_mutex_lock(&(cache->lock));
+			req->sent = time(NULL);
+			req->times_sent += 1;
+			pthread_mutex_unlock(&(cache->lock));
+		}
+	}
 }
 
 /*
@@ -106,7 +127,7 @@ void sr_arpcache_sweepreqs(struct sr_instance *sr) {
             while (packet != 0)
             {
                 /* Send ICMP type 3 notification */
-                ICMP_Message3(sr, packet->buf, packet->iface, 3, 1);
+                ICMP_Message(sr, packet->buf, packet->iface, 3, 1);
                 packet = packet->next;
             }
             sr_arpreq_destroy(cache, req);
