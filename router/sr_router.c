@@ -267,8 +267,7 @@ int ARP_Message(
                 memset(ethernetHeader->ether_dhost, 0xff, ETHER_ADDR_LEN);
         }
         else{
-            fprintf(stderr, "Error: Somehow got a unidentifiable opcode!\n");
-            return -1;
+            printf("Couldn't get destination host field!\n");
         }
         memcpy(ethernetHeader->ether_shost, sendingInterface->addr, ETHER_ADDR_LEN);
         ethernetHeader->ether_type = htons(ethertype_arp);
