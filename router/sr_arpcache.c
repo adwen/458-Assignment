@@ -59,10 +59,13 @@ void handle_arpreq(struct sr_instance *sr, struct sr_arpreq *arpRequest) {
                         memset(targetHardwareAddress, 0, ETHER_ADDR_LEN);
                         ARP_Message(sr, arp_op_request, arpRequest->ip, targetHardwareAddress);
 
-                        /* Update sent and times_sent */
+                        /* Update sent and times_sent: Need to make sure
+                           another process cannot modify this cache via locks */
                         struct sr_arpcache *cache = &(sr->cache);
                         pthread_mutex_lock(&(cache->lock));
+                        /* Sent time is now (Time(NULL)) */
                         arpRequest->sent = time(NULL);
+                        /* Increment Times Sent */
                         arpRequest->times_sent = (arpRequest->times_sent) + 1;
                         pthread_mutex_unlock(&(cache->lock));
                 }
