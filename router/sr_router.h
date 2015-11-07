@@ -80,7 +80,7 @@ int ICMP_Message3(struct sr_instance* sr, uint8_t *packet, char* interface, uint
 int ICMP_Message11(struct sr_instance* sr, uint8_t *packet, char* interface, uint8_t code);
 int sr_handle_arp(struct sr_instance* sr, uint8_t *packet, unsigned int len, char* interface);
 struct sr_if* sr_get_interface_from_ip(struct sr_instance *sr, uint32_t ip_dest);
-int ARP_Message(struct sr_instance* sr, unsigned short ar_op, unsigned char ar_tha[ETHER_ADDR_LEN], uint32_t ar_tip);
+int ARP_Message(struct sr_instance* sr, unsigned short ar_op, uint32_t ar_tip, unsigned char ar_tha[ETHER_ADDR_LEN]);
 int process_IP(struct sr_instance* sr, uint8_t * packet, unsigned int len, char* interface);
 int process_ARP(struct sr_instance* sr, uint8_t *packet, unsigned int len, char* interface);
 

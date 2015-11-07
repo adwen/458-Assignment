@@ -109,7 +109,7 @@ int ICMP_Message0(
         memcpy(icmpType0->data, incomingICMP->data, icmpHeaderSize - 10);
         icmpType0->icmp_sum = cksum(icmpPacket + ethernetHeaderSize + ipHeaderSize, icmpHeaderSize);
 
-        printf("*** Sending an ICMP packet ***\n");
+        printf("Sending ICMP Type 0\n");
 
         /* Send it out */
         int retval = sr_send_packet(sr, icmpPacket, icmpLength, interface);
@@ -169,7 +169,7 @@ int ICMP_Message3(
         icmpType3->icmp_sum = cksum(icmpPacket + ethernetHeaderSize + ipHeaderSize, icmpHeaderSize);
 
 
-        printf("*** Sending an ICMP packet ***\n");
+        printf("Sending ICMP Type 3\n");
 
         /* Send it out */
         int retval = sr_send_packet(sr, icmpPacket, icmpLength, interface);
@@ -229,7 +229,7 @@ int ICMP_Message11(
         memcpy(icmpType11->data, packet + ethernetHeaderSize, ipHeader->ip_hl*4 + 8);
         icmpType11->icmp_sum = cksum(icmpPacket + ethernetHeaderSize + ipHeaderSize, icmpHeaderSize);
 
-        printf("*** Sending an ICMP packet ***\n");
+        printf("Sending ICMP Type 11\n");
 
         /* Send it out */
         int retval = sr_send_packet(sr, icmpPacket, icmpLength, interface);
@@ -241,8 +241,8 @@ int ICMP_Message11(
 int ARP_Message(
         struct sr_instance* sr,
         unsigned short opCode,
-        unsigned char targetHardwareAddress[ETHER_ADDR_LEN],
-        uint32_t targetIP)
+        uint32_t targetIP,
+        unsigned char targetHardwareAddress[ETHER_ADDR_LEN])
 {
         /* Variables */
         size_t ethernetHeaderSize = sizeof(sr_ethernet_hdr_t);
@@ -369,7 +369,7 @@ int process_ARP(struct sr_instance* sr, uint8_t *packet, unsigned int len, char*
                 /* Target is us => Send a ARP Reply */
                 else if (thisInterface != NULL) {
                         Debug("ARP request for our router. send ARP Message (Reply)\n");
-                        return ARP_Message(sr, arp_op_reply, arpHeader->ar_sha, arpHeader->ar_sip);
+                        return ARP_Message(sr, arp_op_reply, arpHeader->ar_sip, arpHeader->ar_sha);
                 }
         }
 
