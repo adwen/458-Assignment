@@ -165,7 +165,7 @@ int ICMP_Message3(
         sr_icmp_t3_hdr_t *icmpType3 = (sr_icmp_t3_hdr_t *) (icmpPacket + ethernetHeaderSize + ipHeaderSize);
         icmpType3->icmp_code = code;
         icmpType3->icmp_type = 3;
-        memcpy(icmpType3->data, packet + ethernetHeaderSize, ipHeader->ip_hl*4 + 8);
+        memcpy(icmpType3->data, packet + ethernetHeaderSize, (ipHeader->ip_hl*4) + 8);
         icmpType3->icmp_sum = cksum(icmpPacket + ethernetHeaderSize + ipHeaderSize, icmpHeaderSize);
 
 
@@ -477,7 +477,7 @@ int process_IP(struct sr_instance* sr, uint8_t * packet, unsigned int len, char*
                         return ICMP_Message3(sr, packet, interface, 3);  /* port unreachable */
                 }
 
-                /* ICMP Msg => we reply only if it is a echo request (Type 0)*/
+                /* ICMP Msg => we reply only if it is a echo request (Type 8)*/
                 else if (ipHeader->ip_p == ip_protocol_icmp) {
 
                         /* Construct the ICMP header from the packet */
@@ -536,7 +536,7 @@ void sr_handlepacket(struct sr_instance* sr,
 
         /* Ethernet Frame Sanity Check */
         if (len < ethernetHeaderSize) {
-                fprintf(stderr, "Invalid Ethernet frame size");
+                fprintf(stderr, "Sanity Check: Ethernet Frame has invalid length!\n");
                 return;
         }
 
