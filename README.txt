@@ -1,7 +1,7 @@
 Team:
 	- Julian Chow (g3chowju)
 	- Toumy Yan (g2yantou)
-	- Yuch (g3yuch) <- WHATS HIS LAST NAME !?!??!?!
+	- Yu Ching Chen (g3yuch) <- Just look on markus u fool
 
 Our team made the design decision to make helper functions to simplify the complexity of the code.
 As a very brief overview, sr_handlepacket delegates the task of processing the logic of 
@@ -85,7 +85,10 @@ file: sr_arpcache.c
 			  time sent and number of times sent in the cache
 
 	helper function: get_charpointer_interface
+		Given an IP address, goes through the routing table to get the name of the interface that
+		corresponds to this IP address.
 	
 	main function: sr_arpcache_sweepreqs
-	
+		Goes through the linked list of queued ARP requests and determines whether or not the request
+		should be resent or scrapped while following specs given out on course webpage.
 	
