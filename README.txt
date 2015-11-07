@@ -1,7 +1,7 @@
 Team:
 	- Julian Chow (g3chowju)
 	- Toumy Yan (g2yantou)
-	- Yu Ching Chen (g3yuch) <- Just look on markus u fool
+	- Yu Ching Chen (g3yuch)
 
 Our team made the design decision to make helper functions to simplify the complexity of the code.
 As a very brief overview, sr_handlepacket delegates the task of processing the logic of 
