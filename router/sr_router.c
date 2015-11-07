@@ -266,6 +266,9 @@ int ARP_Message(
         if (opCode == arp_op_request) {
                 memset(ethernetHeader->ether_dhost, 0xff, ETHER_ADDR_LEN);
         }
+        else{
+            fprintf(stderr, "Error: Somehow got a unidentifiable opcode!\n");
+        }
         memcpy(ethernetHeader->ether_shost, sendingInterface->addr, ETHER_ADDR_LEN);
         ethernetHeader->ether_type = htons(ethertype_arp);
 
@@ -281,6 +284,7 @@ int ARP_Message(
         memcpy(arpHeader->ar_tha, targetHardwareAddress, ETHER_ADDR_LEN);
         arpHeader->ar_tip = targetIP;
 
+        /* Send out arp packet */
         printf("Sending Out ARP Packet!\n");
         int retval = sr_send_packet(sr, arpPacket, ethernetHeaderSize + arpHeaderSize, interface);
         free(arpPacket);
@@ -295,16 +299,15 @@ int process_ARP(struct sr_instance* sr, uint8_t *packet, unsigned int len, char*
         size_t ethernetHeaderSize = sizeof(sr_ethernet_hdr_t);
         size_t arpHeaderSize = sizeof(sr_arp_hdr_t);
 
+
         /* Sanity Check */
         if (len < ethernetHeaderSize + arpHeaderSize) {
                 fprintf(stderr, "Invalid ARP header size");
                 return -1;
         }
 
-        /* Construct the ARP Header from the packet */
+        /* Construct the ARP Header from the packet and get it's interface */
         sr_arp_hdr_t *arpHeader = (sr_arp_hdr_t *)(packet + ethernetHeaderSize);
-
-        /* Get the intended interface from the arpHeader */
         struct sr_if *thisInterface = sr_get_ip_interface(sr, arpHeader->ar_tip);
 
         /* Handle a ARP Reply */
@@ -390,8 +393,11 @@ int process_IP(struct sr_instance* sr, uint8_t * packet, unsigned int len, char*
                 return -1;
         }
 
+        /* Construct the IP and Ethernet Headers + Get the intended interface */
         sr_ethernet_hdr_t *ethernetHeader = (sr_ethernet_hdr_t *) packet;
         sr_ip_hdr_t *ipHeader = (sr_ip_hdr_t *) (packet + ethernetHeaderSize);
+        /* Get intended Interface for this IP Packet */
+        struct sr_if *thisInterface = sr_get_ip_interface(sr, ipHeader->ip_dst);
 
         /* Sanity Check #2*/
         if(!cksum(ipHeader, ipHeader->ip_hl)) {
@@ -399,17 +405,18 @@ int process_IP(struct sr_instance* sr, uint8_t * packet, unsigned int len, char*
                 return -1;
         }
 
-        struct sr_if *thisInterface = sr_get_ip_interface(sr, ipHeader->ip_dst);
 
         /* Target is for somewhere else */
         if (thisInterface == NULL) {
 
-                if( (ipHeader->ip_ttl == 1) || (ipHeader->ip_ttl < 1)) {
+                printf("Packet needs to be routed elsewhere\n");
+
+                /* Sanity Check: Make sure the TTL can go on */
+                uint8_t currentTTL = ipHeader->ip_ttl;
+                if( currentTTL == 1 || currentTTL < 1 ) {
                         printf("TTL Expired: Sending ICMP Type 11\n");
                         return ICMP_Message11(sr, packet, interface, 0);
                 }
-
-                printf("Packet needs to be routed elsewhere\n");
 
                 /* Find where it should go via routing table from our interface sr */
                 struct sr_rt *routingEntryPointer = sr->routing_table;
