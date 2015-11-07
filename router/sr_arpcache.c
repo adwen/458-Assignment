@@ -14,7 +14,7 @@
 #include <arpa/inet.h>
 
 
-char* get_charpointer_interface(struct sr_instance *sr, uint32_t ip) {
+char *get_charpointer_interface(struct sr_instance *sr, uint32_t ip) {
 	struct sr_rt *rt_node = sr->routing_table;
 	while (rt_node) {
 		if ((ip & rt_node->mask.s_addr) == rt_node->dest.s_addr) {
@@ -26,23 +26,42 @@ char* get_charpointer_interface(struct sr_instance *sr, uint32_t ip) {
 	return NULL;
 }
 
-void handle_arpreq(struct sr_instance *sr, struct sr_arpreq *req) {
-	if (difftime(time(NULL), req->sent) > 1) {
-		if (req->times_sent >= 5) { /* send ICMP Destination host unreachable */
-			struct sr_packet *pk = req->packets;
-			while (pk) {
-				ICMP_Message3(sr, pk->buf, pk->iface, 1);
-				pk = pk->next;
+void handle_arpreq(struct sr_instance *sr, struct sr_arpreq *arpRequest) {
+
+    /* Variables */
+    double threshold = 1.0;     /* One Second */
+
+    /* Get the time diff between current time and last sent */
+    double timeDifference = difftime(time(NULL), arpRequest->sent);
+
+    /* If time difference is greater than threhsold: If ARP request hasnt been sent in the last second */
+	if (timeDifference > threshold) {
+
+        /* ARP Request sent 5 times with no response => send Type 3 to all senders waiting for it */
+		if (arpRequest->times_sent >= 5) {
+            /* Get All packets of all senders waiting on it*/
+			struct sr_packet *packetPointer = arpRequest->packets;
+
+            /* Send a Type 3 to each of them */
+			while (packetPointer != NULL) {
+				ICMP_Message3(sr, packetPointer->buf, packetPointer->iface, 1);
+				packetPointer = packetPointer->next;
 			}
-			sr_arpreq_destroy(&(sr->cache), req);
-		} else {
-			unsigned char arp_th[6];
-			memset(arp_th, 0, ETHER_ADDR_LEN);
-			ARP_Message(sr, arp_op_request, arp_th, req->ip);
+			sr_arpreq_destroy(&(sr->cache), arpRequest);
+
+		}
+        /* Otherwise, send ARP request, update the sent time and increment times_sent */
+        else {
+            /* Send ARP Request */
+			unsigned char targetHardwareAddress[6];
+			memset(targetHardwareAddress, 0, ETHER_ADDR_LEN);
+			ARP_Message(sr, arp_op_request, targetHardwareAddress, arpRequest->ip);
+
+            /* Update sent and times_sent */
 			struct sr_arpcache *cache = &(sr->cache);
 			pthread_mutex_lock(&(cache->lock));
-			req->sent = time(NULL);
-			req->times_sent += 1;
+			arpRequest->sent = time(NULL);
+			arpRequest->times_sent = (arpRequest->times_sent) + 1;
 			pthread_mutex_unlock(&(cache->lock));
 		}
 	}

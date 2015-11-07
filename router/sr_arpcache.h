@@ -149,6 +149,6 @@ void *sr_arpcache_timeout(void *cache_ptr);
 
 /* Functions we Added */
 char *get_charpointer_interface(struct sr_instance *sr, uint32_t ip);
-void handle_arpreq(struct sr_instance *sr, struct sr_arpreq *req);
+void handle_arpreq(struct sr_instance *sr, struct sr_arpreq *arpRequest);
 
 #endif
