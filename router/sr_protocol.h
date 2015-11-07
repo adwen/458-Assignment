@@ -94,8 +94,8 @@ struct sr_icmp_t0_hdr {
   uint8_t icmp_code;
   uint16_t icmp_sum;
   uint16_t icmp_identifier;
-  uint16_t seqnum;
-  uint16_t timestamp;
+  uint16_t icmp_seqnum;
+  uint16_t icmp_timestamp;
   uint16_t data[ICMP_DATA_SIZE];
 } __attribute__ ((packed)) ;
 typedef struct sr_icmp_t0_hdr sr_icmp_t0_hdr_t;

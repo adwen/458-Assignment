@@ -74,7 +74,10 @@ void sr_set_ether_ip(struct sr_instance* , uint32_t );
 void sr_set_ether_addr(struct sr_instance* , const unsigned char* );
 void sr_print_if_list(struct sr_instance* );
 
-int ICMP_Message(struct sr_instance* sr, uint8_t *packet, char* interface, uint8_t type, uint8_t code);
+/* All Functions we defined */
+int ICMP_Message0(struct sr_instance* sr, uint8_t *packet, char* interface, uint8_t code);
+int ICMP_Message3(struct sr_instance* sr, uint8_t *packet, char* interface, uint8_t code);
+int ICMP_Message11(struct sr_instance* sr, uint8_t *packet, char* interface, uint8_t code);
 int sr_handle_arp(struct sr_instance* sr, uint8_t *packet, unsigned int len, char* interface);
 struct sr_if* sr_get_interface_from_ip(struct sr_instance *sr, uint32_t ip_dest);
 int ARP_Message(struct sr_instance* sr, unsigned short ar_op, unsigned char ar_tha[ETHER_ADDR_LEN], uint32_t ar_tip);

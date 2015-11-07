@@ -31,7 +31,7 @@ void handle_arpreq(struct sr_instance *sr, struct sr_arpreq *req) {
 		if (req->times_sent >= 5) { /* send ICMP Destination host unreachable */
 			struct sr_packet *pk = req->packets;
 			while (pk) {
-				ICMP_Message(sr, pk->buf, pk->iface, 3, 1);
+				ICMP_Message3(sr, pk->buf, pk->iface, 1);
 				pk = pk->next;
 			}
 			sr_arpreq_destroy(&(sr->cache), req);
@@ -127,7 +127,7 @@ void sr_arpcache_sweepreqs(struct sr_instance *sr) {
             while (packet != 0)
             {
                 /* Send ICMP type 3 notification */
-                ICMP_Message(sr, packet->buf, packet->iface, 3, 1);
+                ICMP_Message3(sr, packet->buf, packet->iface, 1);
                 packet = packet->next;
             }
             sr_arpreq_destroy(cache, req);
