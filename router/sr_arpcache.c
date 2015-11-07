@@ -14,7 +14,7 @@
 #include <arpa/inet.h>
 
 
-char * sr_get_charpointer_interface(struct sr_instance *sr, uint32_t ip) {
+char* get_charpointer_interface(struct sr_instance *sr, uint32_t ip) {
 	struct sr_rt *rt_node = sr->routing_table;
 	while (rt_node) {
 		if ((ip & rt_node->mask.s_addr) == rt_node->dest.s_addr) {
@@ -66,7 +66,7 @@ void sr_arpcache_sweepreqs(struct sr_instance *sr) {
         time_t req_time = req->sent;
         time_t current_time = time(NULL); /* get current time */
         uint32_t req_num_sent = req->times_sent;
-        char* interface = sr_get_charpointer_interface(sr, req->ip);
+        char* interface = get_charpointer_interface(sr, req->ip);
         struct sr_if* this_interface = sr_get_interface(sr, interface);
 
         if (current_time < 0)

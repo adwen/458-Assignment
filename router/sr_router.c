@@ -253,7 +253,7 @@ int ARP_Message(
         bzero(arpPacket, ethernetHeaderSize + arpHeaderSize);
 
         /* Get the interfaces */
-        char *interface = sr_get_charpointer_interface(sr, targetIP);
+        char *interface = get_charpointer_interface(sr, targetIP);
         struct sr_if *sendingInterface = sr_get_interface(sr, interface);
 
         /* Create the ethernet frame header from the arpPacket */

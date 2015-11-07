@@ -148,7 +148,7 @@ int   sr_arpcache_destroy(struct sr_arpcache *cache);
 void *sr_arpcache_timeout(void *cache_ptr);
 
 /* Functions we Added */
-char *sr_get_charpointer_interface(struct sr_instance *sr, uint32_t ip);
+char *get_charpointer_interface(struct sr_instance *sr, uint32_t ip);
 void handle_arpreq(struct sr_instance *sr, struct sr_arpreq *req);
 
 #endif
