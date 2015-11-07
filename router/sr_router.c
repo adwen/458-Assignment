@@ -435,8 +435,9 @@ int process_IP(struct sr_instance* sr, uint8_t * packet, unsigned int len, char*
                                 if (cacheEntry == NULL) {
 
                                         printf("Couldn't find LPM in the cache...\n");
-                                        handle_arpreq(sr, sr_arpcache_queuereq(&(sr->cache),
-                                                                               routingEntryPointer->gw.s_addr, packet, len, interface));
+                                        struct sr_arpreq *queuereq = sr_arpcache_queuereq(&(sr->cache),
+                                                                routingEntryPointer->gw.s_addr, packet, len, interface);
+                                        handle_arpreq(sr, queuereq);
                                         return 0;
                                 }
 
