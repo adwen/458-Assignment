@@ -15,24 +15,8 @@
 #define DEBUG 1
 
 /*---------------------------------------------------------------------
- * Method: processIP(struct sr_instance* sr,
-        uint8_ t * ip_packet ,
-        unsigned int len,
-        char* interface)
- * Scope:  Global
- *
- * This method is called each time the router receives an ip packet on the
- * interface.  The packet buffer, the packet length and the receiving
- * interface are passed in as parameters. The packet is complete with
- * ethernet headers.  This function performs sanity checks to make sure the
- * ip packet section of the ethernet frame it  received is valid, and if so it will either
- * 1. forward it to the next router if the ip is not destined for one of our interfaces.
- * 2. send the packet to an interface in our interface list.
- * 3. Send proper ICMP messages to handle various cases
- * a) TTL <= 1 (unreachable)
- * b) TCP, UDP, (unreachable)
- * c) ICMP Echo Requests
- * d) Not found in routing table (unreachable)
+ FUNCTION: processIP
+ - handles all logic from sr_handlepacket related to IP
  *---------------------------------------------------------------------*/
 void processIP(struct sr_instance *sr,
 		uint8_t *ipPacket/* lent */,
@@ -140,18 +124,11 @@ void processIP(struct sr_instance *sr,
 }
 
 /*---------------------------------------------------------------------
-* Method: int ipSanityChecks(uint8_t * ip_packet,len)
-* Scope:  Global
-*
-* This method performs 3 sanity checks to make sure we have a valid IP Packet
-* 1) It checks that the packet length meets the minimum length requirement
-* 2) It checks whether the TTL value is valid.
-* 3) It recomputes the checksum of the sent data and compares it with the sent
-* checksum in the IP header field.
-* returns -2 if TTL is expired so we can send the proper icmp_message
-* returns -1 if other errors were detected
-* returns 0 if passes sanity check
-*---------------------------------------------------------------------*/
+ FUNCTION: ipSanityChecks
+ - script to perform simple sanity checks on a Ip Packet
+ 	- TTL Expire Check
+	- Invalid header Length
+ *---------------------------------------------------------------------*/
 int ipSanityChecks(uint8_t * ip_packet,unsigned int len){
 
 	sr_ip_hdr_t *ipHeader = (sr_ip_hdr_t *)( ip_packet + sizeof(sr_ethernet_hdr_t));

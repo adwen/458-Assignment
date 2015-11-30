@@ -14,13 +14,13 @@
 #include "sr_utils.h"
 #define DEBUG 1
 
-/*---------------------------------------------------------------------
- *
- *                         ICMP FUNCTIONS
- *
- *---------------------------------------------------------------------*/
 
- void constructHeaderIP(sr_ip_hdr_t *ipHeader, sr_ip_hdr_t *previous, uint32_t newLength, uint32_t newDestination, struct sr_if *interface, uint8_t icmpType, uint8_t code)
+/*---------------------------------------------------------------------
+ FUNCTION: constructHeaderIP
+ - Constructs a ipHeader and updates its field according to a previous ipHeader
+ *---------------------------------------------------------------------*/
+ void constructHeaderIP(sr_ip_hdr_t *ipHeader, sr_ip_hdr_t *previous, uint32_t newLength, uint32_t newDestination,
+     struct sr_if *interface, uint8_t icmpType, uint8_t code)
  {
      ipHeader->ip_hl = previous->ip_hl;
      ipHeader->ip_v = previous->ip_v;
@@ -44,6 +44,10 @@
      ipHeader->ip_sum = cksum(ipHeader, sizeof(sr_ip_hdr_t));
  }
 
+ /*---------------------------------------------------------------------
+  FUNCTION: constructType3
+  - constructs a ICMP Type 3 header and fills its fields
+  *---------------------------------------------------------------------*/
  void constructType3(sr_icmp_t3_hdr_t *Type3, uint8_t type, uint8_t code, sr_ip_hdr_t *previous){
      Type3->icmp_type = type;
      Type3->icmp_code = code;
@@ -54,6 +58,10 @@
      Type3->icmp_sum = cksum(Type3, sizeof(sr_icmp_t3_hdr_t));
  }
 
+ /*---------------------------------------------------------------------
+  FUNCTION: processIP
+  - Constructs a ICMP Echo Reply header and fills it's fields
+  *---------------------------------------------------------------------*/
  void constructHeaderEcho(sr_icmp_hdr_t *icmpHeader, uint32_t newLength, uint8_t type, uint8_t code, sr_ip_hdr_t *previous){
      icmpHeader->icmp_type = type;
      icmpHeader->icmp_code = code;
@@ -62,6 +70,10 @@
      icmpHeader->icmp_sum = cksum(icmpHeader, newLength - sizeof(sr_ethernet_hdr_t) - sizeof(sr_ip_hdr_t));
  }
 
+ /*---------------------------------------------------------------------
+  FUNCTION: icmpMessage
+  - handles all logic to send a icmpMessage
+  *---------------------------------------------------------------------*/
  void icmpMessage(struct sr_instance *sr, uint8_t *packet, uint8_t type, uint8_t code) {
      uint32_t newLength;
      sr_ip_hdr_t *previous = (sr_ip_hdr_t *) packet;

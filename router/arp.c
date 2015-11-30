@@ -15,20 +15,8 @@
 
 
 /*---------------------------------------------------------------------
- *
- *                         ARP FUNCTIONS
- *
- *---------------------------------------------------------------------*/
-
-/*---------------------------------------------------------------------
- * Method: void sr_handle_arp_packet(struct sr_instance* sr,
-             uint8_t * arp_packet,
-             unsigned int len,
-             char* interface)
- * Scope: Global
- *
- * This method determines if ARP packet is request or reply and
- * processes accordingly.
+ FUNCTION: processARP
+ - handles all logic from sr_handlepacket related to ARP
  *---------------------------------------------------------------------*/
 
  void processARP(struct sr_instance *sr,
@@ -100,12 +88,11 @@
  }
 
 
-/*---------------------------------------------------------------------
- * Method: void sendARPRequest(struct sr_instance *sr, struct sr_arpreq *req)
- * Scope: Global
- *
- * This method is called to create an Ethernet frame to send an ARP request.
- *---------------------------------------------------------------------*/
+ /*---------------------------------------------------------------------
+  FUNCTION: sendARPRequest
+  - function is invoked to consturct a valid ethernet frame for sending
+    a ARP request
+  *---------------------------------------------------------------------*/
 
  void sendARPRequest(struct sr_instance *sr, struct sr_arpreq *request){
 
