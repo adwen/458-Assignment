@@ -83,23 +83,28 @@ void sr_init(struct sr_instance* sr)
      assert(sr);
      assert(packet);
      assert(interface);
-     printf ("Received packet of length length: %u\n",len);
+     printf ("Received packet of length: %u\n",len);
+
+     // Check if the ethernet packet is valid first
      if (len < sizeof(sr_ethernet_hdr_t)){
          printf("Invalid Frame Size\n");
          return;
      }
 
-     uint16_t packetType = ntohs(((sr_ethernet_hdr_t *)packet)->ether_type);
-     printf("*** -> Received packet of length %d  and of type: %d\n", len, packetType);
-     if (packetType == ETHERTYPE_IP){
-         printf("Received an IP packet!\n");
-         processIP(sr, packet, len, interface);
-     }
+     // IF it passes, check the type of ethernet packet
+     else{
+         uint16_t packetType = ntohs(((sr_ethernet_hdr_t *)packet)->ether_type);
 
-     else if (packetType == ETHERTYPE_ARP)
-     {
-         printf("Received an ARP packet!\n");
-         processARP(sr, packet, len, interface);
+         // ARP Type
+         if (packetType == ETHERTYPE_ARP){
+             printf("Received an ARP packet!\n");
+             processARP(sr, packet, len, interface);
+         }
+         // IP Type
+         else if (packetType == ETHERTYPE_IP){
+             printf("Received an IP packet!\n");
+             processIP(sr, packet, len, interface);
+         }
      }
  }
 
