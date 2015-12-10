@@ -52,8 +52,8 @@ function handle_arpreq(request):
 
 */
 void handle_arpreq(struct sr_instance *sr, struct sr_arpreq *request){
-    assert(sr);
-    assert(request);
+    //assert(sr);
+    //assert(request);
 
 	// If time since last sent is more than 1 second
     if (difftime(time(NULL), request->sent) >= 1.0) {

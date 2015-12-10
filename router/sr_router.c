@@ -100,22 +100,24 @@ void sr_handlepacket(struct sr_instance* sr,
     // Get the interface we received it from
     struct sr_if *receivedInterface = sr_get_interface(sr, interface);
 
-    // Case where we receive an IP
-    if (packetType == IP_PACKET) {
-        processIP(sr, packet, len, receivedInterface);
+    switch (packetType){
+
+        case IP_PACKET:
+            processIP(sr, packet, len, receivedInterface);
+            break;
+
+        case ARP_PACKET:
+            processARP(sr, packet, len, receivedInterface);
+            break;
     }
 
-    // Case where we receive an ARP
-    if (packetType == ARP_PACKET) {
-        processARP(sr, packet, len, receivedInterface);
-    }
-  } /* -- sr_handlepacket -- */
+} /* -- sr_handlepacket -- */
 
 
 void sendToInterface(struct sr_instance *sr, uint8_t *packet, unsigned int len, struct sr_if *sendingInterface, uint32_t ip){
-    assert(sr);
-    assert(packet);
-    assert(sendingInterface);
+    //assert(sr);
+    //assert(packet);
+    //assert(sendingInterface);
 
     struct sr_arpentry *arpEntry = sr_arpcache_lookup(&(sr->cache), ip);
 

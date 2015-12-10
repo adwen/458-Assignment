@@ -183,7 +183,7 @@ struct sr_rt *findLPM(struct sr_instance *sr, uint32_t ip){
     struct sr_rt *tablePointer = 0;
     struct sr_rt *LPM = 0;
 
-    assert(sr);
+    //assert(sr);
 
     // Get a pointer to the routing table
     tablePointer = sr->routing_table;

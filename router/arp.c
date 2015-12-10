@@ -17,9 +17,9 @@
 
 
 void processARP(struct sr_instance *sr, uint8_t *packet, unsigned int len, struct sr_if *interface){
-    assert(sr);
-    assert(packet);
-    assert(interface);
+    //assert(sr);
+    //assert(packet);
+    //assert(interface);
 
 	/* Sanity Check: Length of Ethernet Header */
     if (len < (sizeof(sr_ethernet_hdr_t) + sizeof(sr_arp_hdr_t))) {

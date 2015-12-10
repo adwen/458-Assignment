@@ -15,9 +15,9 @@
 #define DEBUG 1
 
 void processIP(struct sr_instance *sr, uint8_t *packet, unsigned int len, struct sr_if *iface){
-    assert(sr);
-    assert(packet);
-    assert(iface);
+    //assert(sr);
+    //assert(packet);
+    //assert(iface);
 
     /* Sanity Check: Length of Ethernet Header */
     if (len < sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t)) {
@@ -73,8 +73,8 @@ void processIP(struct sr_instance *sr, uint8_t *packet, unsigned int len, struct
 
 
 void ipForwarding(struct sr_instance *sr, uint8_t *packet, unsigned int len){
-    assert(sr);
-    assert(packet);
+    //assert(sr);
+    //assert(packet);
 
     // Construct IP Header
     sr_ip_hdr_t *ipHeader = (sr_ip_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t));

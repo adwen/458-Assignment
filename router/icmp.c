@@ -16,8 +16,8 @@
 #define DEBUG 1
 
 void processICMP(struct sr_instance *sr, uint8_t *packet, unsigned int len){
-    assert(sr);
-    assert(packet);
+    //assert(sr);
+    //assert(packet);
 
     sr_ip_hdr_t *ipHeader = (sr_ip_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t));
 
@@ -46,10 +46,9 @@ void processICMP(struct sr_instance *sr, uint8_t *packet, unsigned int len){
     }
 }
 
-void sendICMP(struct sr_instance *sr, uint8_t *packet, unsigned int len, uint8_t icmp_type, uint8_t icmp_code)
-{
-    assert(sr);
-    assert(packet);
+void sendICMP(struct sr_instance *sr, uint8_t *packet, unsigned int len, uint8_t type, uint8_t code){
+    //assert(sr);
+    //assert(packet);
 
     sr_ethernet_hdr_t *ethernetHeader = (sr_ethernet_hdr_t *)packet;
     sr_ip_hdr_t *ipHeader = (sr_ip_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t));
@@ -67,7 +66,7 @@ void sendICMP(struct sr_instance *sr, uint8_t *packet, unsigned int len, uint8_t
     struct sr_if *sendingInterface = sr_get_interface(sr, routingTableEntry->interface);
 
 	/* Case if ICMP TYPE is a echo reply */
-    if (icmp_type == ECHO_REPLY) {
+    if (type == ECHO_REPLY) {
 
 		// Update the Ethernet Header source and destination
 		memset(ethernetHeader->ether_shost, 0, ETHER_ADDR_LEN);
@@ -91,7 +90,7 @@ void sendICMP(struct sr_instance *sr, uint8_t *packet, unsigned int len, uint8_t
     }
 
 	/* Case if ICMP TYPE is a Unreachable: Type 3 ICMP */
-	else if (icmp_type == DESTINATION_UNREACHABLE) {
+	else if (type == DESTINATION_UNREACHABLE) {
 
 		// Calculate the new length of the packet to be sent (convert to Type 3 ICMP)
 		unsigned int newLength = sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t) + sizeof(sr_icmp_t3_hdr_t);
@@ -118,7 +117,7 @@ void sendICMP(struct sr_instance *sr, uint8_t *packet, unsigned int len, uint8_t
 		newIpHeader->ip_ttl = 64;
 		newIpHeader->ip_p = ip_protocol_icmp;
 		// Check for codes here: Port unreachable goes back to sender
-		if (icmp_code == PORT_UNREACHABLE_CODE) {
+		if (code == PORT_UNREACHABLE_CODE) {
 			newIpHeader->ip_src = ipHeader->ip_dst;
 		}
 		// Otherwise: forwarding goes to the sending interface
@@ -132,8 +131,8 @@ void sendICMP(struct sr_instance *sr, uint8_t *packet, unsigned int len, uint8_t
 		newIpHeader->ip_sum = cksum(newIpHeader, sizeof(sr_ip_hdr_t));
 
 		// Fill in ICMP Type 3 Header
-		type3Header->icmp_type = icmp_type;
-		type3Header->icmp_code = icmp_code;
+		type3Header->icmp_type = type;
+		type3Header->icmp_code = code;
 		type3Header->unused = 0;
 		type3Header->next_mtu = 0;
 		memcpy(type3Header->data, ipHeader, ICMP_DATA_SIZE);	// Cppy the data over
@@ -148,7 +147,7 @@ void sendICMP(struct sr_instance *sr, uint8_t *packet, unsigned int len, uint8_t
 	}
 
 	/* Case if ICMP Type is Time exceeded: TYPE 11 ICMP*/
-	else if (icmp_type == TIME_EXCEEDED) {
+	else if (type == TIME_EXCEEDED) {
 		unsigned int newLength = sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t) + sizeof(sr_icmp_t11_hdr_t);
 		uint8_t *newPacket = (uint8_t *)malloc(newLength);
 		assert(newPacket);
@@ -179,7 +178,7 @@ void sendICMP(struct sr_instance *sr, uint8_t *packet, unsigned int len, uint8_t
 		newIpHeader->ip_sum = cksum(newIpHeader, sizeof(sr_ip_hdr_t));
 
 		// Update ICMP header
-		type11Header->icmp_type = icmp_type;
+		type11Header->icmp_type = type;
 		type11Header->icmp_code = icmp_code;
 		type11Header->unused = 0;
 		// Copy data from into the ICMP header
