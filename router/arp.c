@@ -22,13 +22,13 @@ void processARP(struct sr_instance *sr, uint8_t *packet, unsigned int len, struc
     //assert(interface);
 
 	/* Sanity Check: Length of Ethernet Header */
-    if (len < (sizeof(sr_ethernet_hdr_t) + sizeof(sr_arp_hdr_t))) {
+    if (len < (ethernetHeaderSize + sizeof(sr_arp_hdr_t))) {
         printf("ARP Header invalid length... Terminating.\n");
         return;
     }
 
 	/* Sanity Check: Check if we received a ethernet packet */
-    sr_arp_hdr_t *arpHeader = (sr_arp_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t));
+    sr_arp_hdr_t *arpHeader = (sr_arp_hdr_t *)(packet + ethernetHeaderSize);
     if (ntohs(arpHeader->ar_hrd) != ARP_ETHERNET_HEADER) {
 		printf("Error: Packet was not a Ethernet Frame... Terminating\n");
         return;
@@ -97,13 +97,13 @@ void arpRequest(struct sr_instance *sr, struct sr_if *sendingInterface, uint32_t
     assert(sendingInterface);
 
 	// Get the sending packet Length
-    unsigned int len = sizeof(sr_ethernet_hdr_t) + sizeof(sr_arp_hdr_t);
+    unsigned int len = ethernetHeaderSize + sizeof(sr_arp_hdr_t);
     uint8_t *newLength = (uint8_t *) malloc(len);
     assert(newLength);
 
 	// Use newlength to construct the sending packet
     sr_ethernet_hdr_t *ethernetHeader = (sr_ethernet_hdr_t *) newLength;
-    sr_arp_hdr_t *arpHeader = (sr_arp_hdr_t *) (newLength + sizeof(sr_ethernet_hdr_t));
+    sr_arp_hdr_t *arpHeader = (sr_arp_hdr_t *) (newLength + ethernetHeaderSize);
 
     // Copy in Ethernet Header values
     memset(ethernetHeader->ether_dhost, 255, ETHER_ADDR_LEN);
@@ -138,16 +138,16 @@ void arpReply(struct sr_instance *sr, uint8_t *packet, struct sr_if *sendingInte
     sr_ethernet_hdr_t *ethernetHeader = (sr_ethernet_hdr_t *) packet;
 
 	// Construct ARP Header from packet
-    sr_arp_hdr_t *arpHeader = (sr_arp_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t));
+    sr_arp_hdr_t *arpHeader = (sr_arp_hdr_t *)(packet + ethernetHeaderSize);
 
 	// Size of both combined = how big our new packet Header should be
-    unsigned int len = sizeof(sr_ethernet_hdr_t) + sizeof(sr_arp_hdr_t);
+    unsigned int len = ethernetHeaderSize + sizeof(sr_arp_hdr_t);
     uint8_t *newLength = (uint8_t *)malloc(len);
     assert(newLength);
 
 	// Create a new Ethernet Header from the newLength we just defined
     sr_ethernet_hdr_t *newEthernet = (sr_ethernet_hdr_t *) newLength;
-    sr_arp_hdr_t *newARP = (sr_arp_hdr_t *)(newLength + sizeof(sr_ethernet_hdr_t));
+    sr_arp_hdr_t *newARP = (sr_arp_hdr_t *)(newLength + ethernetHeaderSize);
 
     // Fill in the new ethernet values
     memcpy(newEthernet->ether_dhost, ethernetHeader->ether_shost, ETHER_ADDR_LEN);

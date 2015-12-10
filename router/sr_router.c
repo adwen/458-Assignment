@@ -86,7 +86,7 @@ void sr_handlepacket(struct sr_instance* sr,
     printf("*** -> Received packet of length %d \n",len);
 
     /* Sanity Check: Check if length matches */
-    if (len < sizeof(sr_ethernet_hdr_t)) {
+    if (len < ethernetHeaderSize) {
         printf("Ethernet Header insufficient length... Terminating\n");
         return;
     }

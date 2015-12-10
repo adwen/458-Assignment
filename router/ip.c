@@ -20,14 +20,14 @@ void processIP(struct sr_instance *sr, uint8_t *packet, unsigned int len, struct
     //assert(iface);
 
     /* Sanity Check: Length of Ethernet Header */
-    if (len < sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t)) {
+    if (len < ethernetHeaderSize + ipHeaderSize) {
         printf("Ethernet Header invalid length... Terminating.\n");
         return;
     }
 
     /* Sanity Check: Length of IP Header */
-    sr_ip_hdr_t *ipHeader = (sr_ip_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t));
-    if (len < sizeof(sr_ethernet_hdr_t) + (ipHeader->ip_hl * 4)) {
+    sr_ip_hdr_t *ipHeader = (sr_ip_hdr_t *)(packet + ethernetHeaderSize);
+    if (len < ethernetHeaderSize + (ipHeader->ip_hl * 4)) {
         printf("IP Header invalid length... Terminating.\n");
         return;
     }
@@ -51,7 +51,7 @@ void processIP(struct sr_instance *sr, uint8_t *packet, unsigned int len, struct
     }
     */
 
-    /* is it for me? */
+    // Check if destination interface is for us
     struct sr_if *destination = getIpInterface(sr, ipHeader->ip_dst);
 
 	// If the destination is not for us, we forward!
@@ -61,13 +61,16 @@ void processIP(struct sr_instance *sr, uint8_t *packet, unsigned int len, struct
 
 	// If destination is for us, we handle it accordingly
 	else {
-        if (ipHeader->ip_p == ip_protocol_icmp) {
+
+        // TCP or UDP => destination unreachable ICMP
+        if (ipHeader->ip_p == UDP || ipHeader->ip_p == TCP) {
+            sendICMP(sr, packet, len, DESTINATION_UNREACHABLE, PORT_UNREACHABLE_CODE);
+        }
+        
+        if (ipHeader->ip_p == ICMP) {
             processICMP(sr, packet, len);
         }
 
-		else if (ipHeader->ip_p == ip_protocol_tcp || ipHeader->ip_p == ip_protocol_udp) {
-            sendICMP(sr, packet, len, DESTINATION_UNREACHABLE, PORT_UNREACHABLE_CODE);
-        }
     }
 }
 
@@ -77,7 +80,7 @@ void ipForwarding(struct sr_instance *sr, uint8_t *packet, unsigned int len){
     //assert(packet);
 
     // Construct IP Header
-    sr_ip_hdr_t *ipHeader = (sr_ip_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t));
+    sr_ip_hdr_t *ipHeader = (sr_ip_hdr_t *)(packet + ethernetHeaderSize);
 
     /* Forwading Logistics */
     // Decrement TTL

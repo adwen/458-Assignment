@@ -163,7 +163,7 @@ void print_hdrs(uint8_t *buf, uint32_t length) {
     print_hdr_ip(buf + sizeof(sr_ethernet_hdr_t));
     uint8_t ip_proto = ip_protocol(buf + sizeof(sr_ethernet_hdr_t));
 
-    if (ip_proto == ip_protocol_icmp) { /* ICMP */
+    if (ip_proto == ICMP) { /* ICMP */
       minlength += sizeof(sr_icmp_hdr_t);
       if (length < minlength)
         fprintf(stderr, "Failed to print ICMP header, insufficient length\n");
