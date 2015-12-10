@@ -16,16 +16,17 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "icmp.h"
-#include "arp.h"
+
 #include "ip.h"
+#include "arp.h"
+#include "icmp.h"
 #include "sr_if.h"
 #include "sr_rt.h"
 #include "sr_router.h"
 #include "sr_protocol.h"
 #include "sr_arpcache.h"
 #include "sr_utils.h"
-#define DEBUG 1
+//#include "sr_nat.h"
 /*---------------------------------------------------------------------
  * Method: sr_init(void)
  * Scope:  Global
@@ -51,12 +52,10 @@ void sr_init(struct sr_instance* sr)
     pthread_create(&thread, &(sr->attr), sr_arpcache_timeout, sr);
 
     /* Add initialization code here! */
-
-
-
+    /*if (sr->nat_enabled) {
+        sr_nat_init(&(sr->nat));
+    }*/
 } /* -- sr_init -- */
-
-
 
 /*---------------------------------------------------------------------
  * Method: sr_handlepacket(uint8_t* p,char* interface)
@@ -74,73 +73,66 @@ void sr_init(struct sr_instance* sr)
  *
  *---------------------------------------------------------------------*/
 
- void sr_handlepacket(struct sr_instance* sr,
-         uint8_t * packet/* lent */,
-         unsigned int len,
-         char* interface/* lent */)
- {
-     /* REQUIRES */
-     assert(sr);
-     assert(packet);
-     assert(interface);
-     printf ("Received packet of length: %u\n",len);
+void sr_handlepacket(struct sr_instance* sr,
+          uint8_t * packet/* lent */,
+          unsigned int len,
+          char* interface/* lent */)
+{
+    /* REQUIRES */
+    assert(sr);
+    assert(packet);
+    assert(interface);
 
-     // Check if the ethernet packet is valid first
-     if (len < sizeof(sr_ethernet_hdr_t)){
-         printf("Invalid Frame Size\n");
-         return;
-     }
+    printf("*** -> Received packet of length %d \n",len);
 
-     // IF it passes, check the type of ethernet packet
-     else{
-         uint16_t packetType = ntohs(((sr_ethernet_hdr_t *)packet)->ether_type);
+    /* Sanity Check: Check if length matches */
+    if (len < sizeof(sr_ethernet_hdr_t)) {
+        printf("Ethernet Header insufficient length... Terminating\n");
+        return;
+    }
 
-         // ARP Type
-         if (packetType == ETHERTYPE_ARP){
-             printf("Received an ARP packet!\n");
-             processARP(sr, packet, len, interface);
-         }
-         // IP Type
-         else if (packetType == ETHERTYPE_IP){
-             printf("Received an IP packet!\n");
-             processIP(sr, packet, len, interface);
-         }
-     }
- }
+    // Build the ethernetHeader from the received packet
+    sr_ethernet_hdr_t *ethernetHeader = (sr_ethernet_hdr_t *) packet;
+
+    // Check and store Packet Type
+    uint16_t packetType = ntohs(ethernetHeader->ether_type);
+
+    // Get the interface we received it from
+    struct sr_if *receivedInterface = sr_get_interface(sr, interface);
+
+    // Case where we receive an IP
+    if (packetType == IP_PACKET) {
+        processIP(sr, packet, len, receivedInterface);
+    }
+
+    // Case where we receive an ARP
+    if (packetType == ARP_PACKET) {
+        processARP(sr, packet, len, receivedInterface);
+    }
+  } /* -- sr_handlepacket -- */
 
 
+void sendToInterface(struct sr_instance *sr, uint8_t *packet, unsigned int len, struct sr_if *sendingInterface, uint32_t ip){
+    assert(sr);
+    assert(packet);
+    assert(sendingInterface);
 
-/*---------------------------------------------------------------------
- * struct sr_rt *findLPM(uint32_t ip_dest, struct sr_rt * rt)
- * Scope:  Global
- *
- * Does a bitwise AND of the ip_destination and subnet mask
- * and tries to locate it in our current routing table based on
- * longest prefix matching.  Returns a the sr_table entry associated
- * with the ip destination, or if not found, returns NULL
- *---------------------------------------------------------------------*/
- struct sr_rt *findLPM(uint32_t destinationIP, struct sr_rt *rt)
- {
-     printf("Computing Longest Prefix Match!\n");
+    struct sr_arpentry *arpEntry = sr_arpcache_lookup(&(sr->cache), ip);
 
-     struct sr_rt *currentPrefix = rt;
-     struct sr_rt *LPM = NULL;
-     // Traverse
-     while (currentPrefix != NULL){
-         if ((currentPrefix->dest.s_addr & currentPrefix->mask.s_addr) == (destinationIP & currentPrefix->mask.s_addr)){
+  	/* If the packet is not found in the ARP cache, pass to handle_arpreq */
+    if (!arpEntry) {
+        struct sr_arpreq *arpRequestPointer = sr_arpcache_queuereq(&(sr->cache), ip, packet, len, sendingInterface->name);
+        handle_arpreq(sr, arpRequestPointer);
+    }
 
-             if (LPM == NULL){
-                 LPM = currentPrefix;
-             }
-             else if (currentPrefix->mask.s_addr > LPM->mask.s_addr){
-                 LPM = currentPrefix;
-             }
-         }
-         // Got to next entry
-         currentPrefix = currentPrefix->next;
-     }
-     if (LPM == NULL){
-         printf("Error: No Longest Prefix Match Found!\n");
-     }
-     return LPM;
- }
+  	/* if Packet is found in the ARP cache: simply send it out*/
+    if (arpEntry) {
+        sr_ethernet_hdr_t *ethernetHeader = (sr_ethernet_hdr_t *)packet;
+
+        memcpy(ethernetHeader->ether_dhost, arpEntry->mac, ETHER_ADDR_LEN);
+        memcpy(ethernetHeader->ether_shost, sendingInterface->addr, ETHER_ADDR_LEN);
+
+        sr_send_packet(sr, packet, len, sendingInterface->name);
+        free(arpEntry);
+    }
+}

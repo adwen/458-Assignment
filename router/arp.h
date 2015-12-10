@@ -6,7 +6,6 @@
 #include "sr_arpcache.h"
 #include "sr_router.h"
 
-/* we dont like this debug , but what to do for varargs ? */
 #ifdef _DEBUG_
 #define Debug(x, args...) printf(x, ## args)
 #define DebugMAC(x) \
@@ -20,10 +19,8 @@
 #define INIT_TTL 255
 #define PACKET_DUMP_SIZE 1024
 
-/* forward declare */
-struct sr_if;
-struct sr_rt;
 
-// ARP Stuff
-void processARP(struct sr_instance* , uint8_t * , unsigned int , char* );
-void sendARPRequest(struct sr_instance *sr, struct sr_arpreq *req);
+// define
+void processARP(struct sr_instance *sr, uint8_t *packet, unsigned int len, struct sr_if *iface);
+void arpReply(struct sr_instance *sr, uint8_t *packet, struct sr_if *sendingInterface, struct sr_if *senderInterface);
+void arpRequest(struct sr_instance *sr, struct sr_if *sendingInterface, uint32_t targetIP);

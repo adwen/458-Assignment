@@ -28,21 +28,22 @@
 #ifndef SR_UTILS_H
 #define SR_UTILS_H
 
-uint16_t cksum (const void *_data, int len);
+uint16_t cksum(const void *_data, int len);
 
-void printEthAddr(uint8_t *addr);
-uint16_t printEthHeader(uint8_t *buf);
-void printIPAddress(struct in_addr address);
-uint8_t printIPHeader(uint8_t *buf);
-void printICMPHeader(uint8_t *buf);
-/*
- * Prints out IP address from integer value
- */
-void printIPFromInt(uint32_t ip);
-void printARPHeader(uint8_t *buf);
-/*
- * Prints out all possible headers, starting from Ethernet
- */
-void printAllHeaders(uint8_t *buf, uint32_t length);
+uint16_t checkPacketType(uint8_t *buf);
+uint8_t ip_protocol(uint8_t *buf);
+
+void print_addr_eth(uint8_t *addr);
+void print_addr_ip(struct in_addr address);
+void print_addr_ip_int(uint32_t ip);
+
+void print_hdr_eth(uint8_t *buf);
+void print_hdr_ip(uint8_t *buf);
+void print_hdr_icmp(uint8_t *buf);
+void print_hdr_tcp(uint8_t *buf);
+void print_hdr_arp(uint8_t *buf);
+
+/* prints all headers, starting from eth */
+void print_hdrs(uint8_t *buf, uint32_t length);
 
 #endif /* -- SR_UTILS_H -- */

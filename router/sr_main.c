@@ -45,6 +45,12 @@ extern char* optarg;
 #define DEFAULT_RTABLE "rtable"
 #define DEFAULT_TOPO 0
 
+/*
+#define DEFAULT_ICMP_QUERY_TIMEOUT 60
+#define DEFAULT_TCP_ESTABLISHED_TIMEOUT 7440
+#define DEFAULT_TCP_TRANSITORY_TIMEOUT 300
+*/
+
 static void usage(char* );
 static void sr_init_instance(struct sr_instance* );
 static void sr_destroy_instance(struct sr_instance* );
@@ -67,9 +73,12 @@ int main(int argc, char **argv)
     char *logfile = 0;
     struct sr_instance sr;
 
+    /*
+    NAT SHIT
+    */
     printf("Using %s\n", VERSION_INFO);
 
-    while ((c = getopt(argc, argv, "hs:v:p:u:t:r:l:T:")) != EOF)
+    while ((c = getopt(argc, argv, "hs:v:p:u:t:r:l:T:nI:E:R:")) != EOF)
     {
         switch (c)
         {
@@ -101,6 +110,10 @@ int main(int argc, char **argv)
             case 'T':
                 template = optarg;
                 break;
+
+        /*
+            NATSHIT
+        */
         } /* switch */
     } /* -- while -- */
 
@@ -142,10 +155,8 @@ int main(int argc, char **argv)
         Debug("Requesting topology %d\n", topo);
 
     /* connect to server and negotiate session */
-    Debug("hey ");
     if(sr_connect_to_server(&sr,port,server) == -1)
     {
-        Debug("Error connecting to server\n.");
         return 1;
     }
 
@@ -157,6 +168,7 @@ int main(int argc, char **argv)
       /* Read from specified routing table */
       sr_load_rt_wrap(&sr, rtable);
     }
+
 
     /* call router init (for arp subsystem etc.) */
     sr_init(&sr);

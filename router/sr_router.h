@@ -15,6 +15,7 @@
 
 #include "sr_protocol.h"
 #include "sr_arpcache.h"
+//#include "sr_nat.h"
 
 /* we dont like this debug , but what to do for varargs ? */
 #ifdef _DEBUG_
@@ -54,6 +55,11 @@ struct sr_instance
     struct sr_arpcache cache;   /* ARP cache */
     pthread_attr_t attr;
     FILE* logfile;
+
+    /* NAT STUFF PUT HERE
+    int nat_enabled;
+    struct sr_nat nat;
+    */
 };
 
 /* -- sr_main.c -- */
@@ -65,18 +71,11 @@ int sr_connect_to_server(struct sr_instance* ,unsigned short , char* );
 int sr_read_from_server(struct sr_instance* );
 
 /* -- sr_router.c -- */
-// Core Stuff
 void sr_init(struct sr_instance* );
 void sr_handlepacket(struct sr_instance* , uint8_t * , unsigned int , char* );
-struct sr_rt *findLPM(uint32_t ip_dest, struct sr_rt * rt);
-
-// ICMP Stuff
-//void icmpMessage(struct sr_instance *sr, uint8_t *packet, uint8_t icmp_type, uint8_t icmp_code);
+void sendToInterface(struct sr_instance *sr, uint8_t *packet, unsigned int len, struct sr_if *oiface, uint32_t ip);
 
 
-// ARP Stuff
-//void processARP(struct sr_instance* , uint8_t * , unsigned int , char* );
-//void sendARPRequest(struct sr_instance *sr, struct sr_arpreq *req);
 
 /* -- sr_if.c -- */
 void sr_add_interface(struct sr_instance* , const char* );

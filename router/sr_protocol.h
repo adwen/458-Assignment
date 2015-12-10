@@ -40,42 +40,49 @@
 #include <sys/types.h>
 #include <arpa/inet.h>
 
+
 #ifndef IP_MAXPACKET
 #define IP_MAXPACKET 65535
 #endif
+
+
 
 /* FIXME
  * ohh how lame .. how very, very lame... how can I ever go out in public
  * again?! /mc
  */
+
 #ifndef __LITTLE_ENDIAN
 #define __LITTLE_ENDIAN 1
 #endif
+
 #ifndef __BIG_ENDIAN
 #define __BIG_ENDIAN 2
 #endif
-#ifdef _CYGWIN_
-#ifndef __BYTE_ORDER
-#define __BYTE_ORDER __LITTLE_ENDIAN
-#endif
-#endif
-#ifdef _LINUX_
-#ifndef __BYTE_ORDER
-#define __BYTE_ORDER __LITTLE_ENDIAN
-#endif
-#endif
-#ifdef _SOLARIS_
-#ifndef __BYTE_ORDER
-#define __BYTE_ORDER __BIG_ENDIAN
-#endif
-#endif
-#ifdef _DARWIN_
-#ifndef __BYTE_ORDER
-#define __BYTE_ORDER __BIG_ENDIAN
-#endif
-#endif
 
-#define ICMP_SIZE 28
+#ifndef __BYTE_ORDER
+  #ifdef _CYGWIN_
+  #define __BYTE_ORDER __LITTLE_ENDIAN
+  #endif
+  #ifdef _LINUX_
+  #define __BYTE_ORDER __LITTLE_ENDIAN
+  #endif
+  #ifdef _SOLARIS_
+  #define __BYTE_ORDER __BIG_ENDIAN
+  #endif
+  #ifdef _DARWIN_
+  #define __BYTE_ORDER __BIG_ENDIAN
+  #endif
+#endif
+#define ICMP_DATA_SIZE 28
+
+
+
+
+
+
+
+/**** ICMP PROTOCOL STRUCTURE *****/
 
 /* Structure of a ICMP header
  */
@@ -87,16 +94,125 @@ struct sr_icmp_hdr {
 } __attribute__ ((packed)) ;
 typedef struct sr_icmp_hdr sr_icmp_hdr_t;
 
-/* Structure of a ICMP Type 3 */
+
+/* Structure of a type0/type8 ICMP header
+ */
+struct sr_icmp_echo_hdr {
+    uint8_t icmp_type;
+    uint8_t icmp_code;
+    uint16_t icmp_sum;
+    uint16_t icmp_id;
+    uint16_t icmp_seq;
+
+} __attribute__ ((packed)) ;
+typedef struct sr_icmp_echo_hdr sr_icmp_echo_hdr_t;
+
+
+/* Structure of a type3 ICMP header
+ */
 struct sr_icmp_t3_hdr {
   uint8_t icmp_type;
   uint8_t icmp_code;
   uint16_t icmp_sum;
   uint16_t unused;
   uint16_t next_mtu;
-  uint8_t data[ICMP_SIZE];
+  uint8_t data[ICMP_DATA_SIZE];
+
 } __attribute__ ((packed)) ;
 typedef struct sr_icmp_t3_hdr sr_icmp_t3_hdr_t;
+
+/* Structure of a type11 ICMP header
+ */
+struct sr_icmp_t11_hdr {
+    uint8_t icmp_type;
+    uint8_t icmp_code;
+    uint16_t icmp_sum;
+    uint32_t unused;
+    uint8_t data[ICMP_DATA_SIZE];
+
+} __attribute__ ((packed)) ;
+typedef struct sr_icmp_t11_hdr sr_icmp_t11_hdr_t;
+
+// ICMP TYPE DEFINITIONS
+enum ICMP_TYPES {
+    ECHO_REPLY = 0,
+    ECHO_REQUEST = 8,
+    DESTINATION_UNREACHABLE = 3,
+    TIME_EXCEEDED = 11,
+};
+
+// ICMP CODE DEFINITIONS
+enum ICMP_CODES {
+    ECHO_REPLY_CODE = 0,
+    ECHO_REQUEST_CODE = 0,
+    NET_UNREACHABLE_CODE = 0,
+    HOST_UNREACHABLE_CODE = 1,
+    PORT_UNREACHABLE_CODE = 3,
+    TTL_CODE = 0,
+};
+
+/**** ICMP PROTOCOL STRUCTURE *****/
+
+
+
+
+
+
+
+
+/**** TCP PROTOCOL STRUCTURE *****/
+
+/*
+ * Structure of a TCP header, naked of options.
+ */
+struct sr_tcp_hdr
+{
+    uint16_t tcp_sport;
+    uint16_t tcp_dport;
+    uint32_t tcp_seq;
+    uint32_t tcp_ack;
+#if __BYTE_ORDER == __LITTLE_ENDIAN
+    unsigned int tcp_r:4;
+    unsigned int tcp_off:4;
+#elif __BYTE_ORDER == __BIG_ENDIAN
+    unsigned int tcp_off:4;
+    unsigned int tcp_r:4;
+#else
+#error "Byte ordering not specified "
+#endif
+    uint8_t tcp_ctl;
+#define TCP_URG 0x20
+#define TCP_ACK 0x10
+#define TCP_PSH 0x08
+#define TCP_RST 0x04
+#define TCP_SYN 0x02
+#define TCP_FIN 0x01
+    uint16_t tcp_win;
+    uint16_t tcp_sum;
+    uint16_t tcp_urg;
+} __attribute__ ((packed)) ;
+typedef struct sr_tcp_hdr sr_tcp_hdr_t;
+
+// Might not need this
+struct sr_tcp_pseudo_hdr
+{
+    uint32_t ip_src;
+    uint32_t ip_dst;
+    uint8_t pseudo_r;
+    uint8_t ip_p;
+    uint16_t tcp_len;
+} __attribute__ ((packed)) ;
+typedef struct sr_tcp_pseudo_hdr sr_tcp_pseudo_hdr_t;
+
+
+/**** END TCP PROTOCOL STRUCTURE *****/
+
+
+
+
+
+
+/**** IP PROTOCOL STRUCTURE *****/
 
 /*
  * Structure of an internet header, naked of options.
@@ -127,6 +243,22 @@ struct sr_ip_hdr
   } __attribute__ ((packed)) ;
 typedef struct sr_ip_hdr sr_ip_hdr_t;
 
+/* IP Protocol Codes */
+enum sr_ip_protocol {
+    ip_protocol_icmp = 0x0001,
+    ip_protocol_tcp = 0x0006,
+    ip_protocol_udp = 0x0011,
+};
+
+/**** END IP PROTOCOL STRUCTURE *****/
+
+
+
+
+
+
+/**** ETHERNET PROTOCOL STRUCTURE *****/
+
 /*
  *  Ethernet packet header prototype.  Too many O/S's define this differently.
  *  Easy enough to solve that and define it here.
@@ -140,73 +272,19 @@ struct sr_ethernet_hdr
     uint8_t  ether_shost[ETHER_ADDR_LEN];    /* source ethernet address */
     uint16_t ether_type;                     /* packet type ID */
 } __attribute__ ((packed)) ;
-
 typedef struct sr_ethernet_hdr sr_ethernet_hdr_t;
 
-/*	Ethernet type	*/
-#ifndef ETHERTYPE_IP
-#define ETHERTYPE_IP            0x0800  /* IP protocol */
-#endif
+enum PACKET_TYPES {
+    IP_PACKET = 0x0800,
+    ARP_PACKET = 0x0806,
+};
 
-#ifndef ETHERTYPE_ARP
-#define ETHERTYPE_ARP           0x0806  /* Addr. resolution protocol */
-#endif
-
-/*	IP Protocol	Codes to reference */
-#ifndef ICMP
-#define ICMP   0x0001
-#endif
-#ifndef TCP
-#define TCP   0x0006
-#endif
-#ifndef UDP
-#define UDP   0x0011
-#endif
-
-/*	ARP opcodes and format	*/
-#ifndef ARP_REQUEST
-#define ARP_REQUEST   0x0001
-#endif
-#ifndef ARP_REPLY
-#define ARP_REPLY   0x0002
-#endif
-#ifndef ARP_HRD_ETHER
-#define ARP_HRD_ETHER   0x0001
-#endif
-#ifndef ARP_PRO_ETHER
-#define ARP_PRO_ETHER   0x0800
-#endif
-
-/*	ICMP codes and types	*/
-// Types
-#ifndef ICMP_ECHO_REQUEST
-#define ICMP_ECHO_REQUEST   0x0008
-#endif
-#ifndef ICMP_ECHO_REPLY
-#define ICMP_ECHO_REPLY   0x0000
-#endif
-#ifndef ICMP_TIME_EXCEEDED
-#define ICMP_TIME_EXCEEDED   0x000b
-#endif
-#ifndef ICMP_DEST_UNREACHABLE
-#define ICMP_DEST_UNREACHABLE   0x0003
-#endif
-
-//Codes
-#ifndef ICMP_DEFAULT_CODE
-#define ICMP_DEFAULT_CODE   0x0000
-#endif
-#ifndef ICMP_PORT_UNREACHABLE
-#define ICMP_PORT_UNREACHABLE   0x0003
-#endif
-#ifndef ICMP_HOST_UNREACHABLE
-#define ICMP_HOST_UNREACHABLE   0x0001
-#endif
+/**** END ETHERNET PROTOCOL STRUCTURE *****/
 
 
 
-//#define ARP_REQUEST 1
-//#define ARP_REPLY   2
+
+/**** ARP PROTOCOL STRUCTURE *****/
 
 struct sr_arp_hdr
 {
@@ -222,4 +300,21 @@ struct sr_arp_hdr
 } __attribute__ ((packed)) ;
 typedef struct sr_arp_hdr sr_arp_hdr_t;
 
-#endif /* -- SR_PROTOCOL_H -- */
+enum ARP_OPERATION_CODES {
+    ARP_REQUEST = 0x0001,
+    ARP_REPLY = 0x0002,
+};
+
+enum ARP_HARDWARE_FORMAT {
+    ARP_ETHERNET_HEADER = 0x0001,
+};
+
+/**** ENDARP PROTOCOL STRUCTURE *****/
+
+
+
+
+
+#define sr_IFACE_NAMELEN 32
+
+#endif

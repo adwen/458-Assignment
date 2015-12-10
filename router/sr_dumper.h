@@ -23,14 +23,14 @@
 
 #define LINKTYPE_ETHERNET 1
 
-#define min(a,b) ( (a) < (b) ? (a) : (b) ) 
+#define min(a,b) ( (a) < (b) ? (a) : (b) )
 
 /* file header */
 struct pcap_file_header {
   uint32_t   magic;         /* magic number */
   uint16_t version_major; /* version number major */
   uint16_t version_minor; /* version number minor */
-  int     thiszone;      /* gmt to local correction */ 
+  int     thiszone;      /* gmt to local correction */
   uint32_t   sigfigs;       /* accuracy of timestamps */
   uint32_t   snaplen;       /* max length saved portion of each pkt */
   uint32_t   linktype;      /* data link type (LINKTYPE_*) */
@@ -68,7 +68,7 @@ struct pcap_sf_pkthdr {
  */
 FILE* sr_dump_open(const char *fname, int thiszone, int snaplen);
 
-/** 
+/**
  * Write data into the log file
  */
 void sr_dump(FILE *fp, const struct pcap_pkthdr *h, const unsigned char *sp);

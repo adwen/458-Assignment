@@ -1,4 +1,4 @@
-#!/usr/bin/sh
+#!/bin/sh
 
 #sends 30 ping packets to ip address passed in as first argument.
 
@@ -8,5 +8,5 @@ then
   exit $E_BADARGS
 fi
 
-ping -c 30 $@
+traceroute -p 33000 -w 1 -n $@
 

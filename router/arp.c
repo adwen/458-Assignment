@@ -3,122 +3,169 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "arp.h"
+#include "icmp.h"
 #include "ip.h"
+#include "arp.h"
 #include "sr_if.h"
 #include "sr_rt.h"
 #include "sr_router.h"
 #include "sr_protocol.h"
 #include "sr_arpcache.h"
 #include "sr_utils.h"
+#include "sr_router.h"
 #define DEBUG 1
 
 
-/*---------------------------------------------------------------------
- FUNCTION: processARP
- - handles all logic from sr_handlepacket related to ARP
- *---------------------------------------------------------------------*/
+void processARP(struct sr_instance *sr, uint8_t *packet, unsigned int len, struct sr_if *interface){
+    assert(sr);
+    assert(packet);
+    assert(interface);
 
- void processARP(struct sr_instance *sr,
-                 uint8_t *arp_packet,
-                 unsigned int len,
-                 char *interface)
- {
-     sr_arp_hdr_t *arpHeader = (sr_arp_hdr_t *)(arp_packet + sizeof(sr_ethernet_hdr_t));
+	/* Sanity Check: Length of Ethernet Header */
+    if (len < (sizeof(sr_ethernet_hdr_t) + sizeof(sr_arp_hdr_t))) {
+        printf("ARP Header invalid length... Terminating.\n");
+        return;
+    }
 
-     // If the ARP Packet is a ARP_REQUEST
-     if (ntohs(arpHeader->ar_op) == ARP_REQUEST) {
-         struct sr_if *interfaces = sr->if_list;
-         while (interfaces != NULL)
-         {
-             // If a match destination interface match is found
-             if (interfaces->ip == arpHeader->ar_tip){
-                 break;
-             }
-             interfaces = interfaces->next;
-         }
+	/* Sanity Check: Check if we received a ethernet packet */
+    sr_arp_hdr_t *arpHeader = (sr_arp_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t));
+    if (ntohs(arpHeader->ar_hrd) != ARP_ETHERNET_HEADER) {
+		printf("Error: Packet was not a Ethernet Frame... Terminating\n");
+        return;
+    }
 
-         // Case where we found a matching interface: interfaces != null
-         if (interfaces) {
-             // Construct a ARP Reply
-             uint8_t *ARPReply = (uint8_t *) malloc(sizeof(sr_ethernet_hdr_t) + sizeof(sr_arp_hdr_t));
+    /* Sanity Check: Check if we received a IP Protocol packet */
+    if (ntohs(arpHeader->ar_pro) != IP_PACKET) {
+		printf("Error: Packet was not a IP Protocol Packet... Terminating\n");
+        return;
+    }
 
-             // Construct the Ethernet Header
-             sr_ethernet_hdr_t *ethernetHeader = (sr_ethernet_hdr_t *) ARPReply;
-             memcpy(ethernetHeader->ether_dhost, arpHeader->ar_sha, ETHER_ADDR_LEN);
-             memcpy(ethernetHeader->ether_shost, interfaces->addr, ETHER_ADDR_LEN);
-             ethernetHeader->ether_type = htons(ETHERTYPE_ARP);
+    /* Check if the destination is for us or not */
+    struct sr_if *destination = getIpInterface(sr, arpHeader->ar_tip);
+    if (!destination) {
+		printf("Error: ARP Packet was not intended for this router interface... Terminating\n");
+        return;
+    }
 
-             // Construct the ARP Header
-             sr_arp_hdr_t *newARP = (sr_arp_hdr_t *)(ARPReply + sizeof(sr_ethernet_hdr_t));
-             // Copy some values
-             newARP->ar_hrd = htons(ARP_HRD_ETHER);
-             newARP->ar_pro = arpHeader->ar_pro;
-             newARP->ar_hln = arpHeader->ar_hln;
-             newARP->ar_pln = arpHeader->ar_pln;
-             newARP->ar_op = htons(ARP_REPLY);
-             memcpy(newARP->ar_sha, interfaces->addr, ETHER_ADDR_LEN);
-             newARP->ar_sip = arpHeader->ar_tip;
-             memcpy(newARP->ar_tha, arpHeader->ar_sha, ETHER_ADDR_LEN);
-             newARP->ar_tip = arpHeader->ar_sip;
+	/* Check the opCode (Type of ARP Packet) */
+    unsigned short opCode = ntohs(arpHeader->ar_op);
 
-             // Send reply
-             sr_send_packet(sr, ARPReply, sizeof(sr_ethernet_hdr_t) + sizeof(sr_arp_hdr_t), interface);
-             free(ARPReply);
-         }
-     }
+	// ARP Request Case: simply send a ARP Reply only if target ip is in one of our interfaces
+    if (opCode == ARP_REQUEST) {
+        arpReply(sr, packet, interface, destination);
+    }
 
-     // If the ARP Packet is a ARP_REPLY
-     else if (ntohs(arpHeader->ar_op) == ARP_REPLY) {
-         // Cache it instantly
-         struct sr_arpreq *ARPRequest = sr_arpcache_insert(&sr->cache, arpHeader->ar_sha, arpHeader->ar_sip);
+	/* ARP Reply Case: Cache entry iff the target IP address is one of our router’s IP addresses. */
+	else if (opCode == ARP_REPLY) {
 
-         if (ARPRequest != NULL) {
-             struct sr_packet *waitingPackets = ARPRequest->packets;
-             // Send a reply to all waitingPackets waiting for this
-             while (waitingPackets != NULL) {
-                 sr_ethernet_hdr_t *ethernetHeader = (sr_ethernet_hdr_t *)(waitingPackets->buf);
-                 memcpy(ethernetHeader->ether_dhost, arpHeader->ar_sha, ETHER_ADDR_LEN);
-                 sr_send_packet(sr, waitingPackets->buf, waitingPackets->len, waitingPackets->iface);
-                 waitingPackets = waitingPackets->next;
-             }
-             sr_arpreq_destroy(&sr->cache, ARPRequest);
-         }
-     }
- }
+		// Check if found
+        struct sr_arpreq *arpEntryPointer = sr_arpcache_insert(&(sr->cache), arpHeader->ar_sha, arpHeader->ar_sip);
+
+		// Case where it is found
+        if (arpEntryPointer) {
+            struct sr_packet *arpPacket = NULL;
+            struct sr_if *sendingInterface = NULL;
+            sr_ethernet_hdr_t *ethernetHeader = NULL;
+
+            arpPacket = arpEntryPointer->packets;
+
+			// While we still have a valid ARP Entry, send it out contiously
+            while (arpPacket) {
+
+				// Get the sending Interface from the current arpPacket
+                sendingInterface = sr_get_interface(sr, arpPacket->iface);
+
+				// Build the ethernet header from the arpPacket's buffer, has destination MAC empty
+                ethernetHeader = (sr_ethernet_hdr_t *)(arpPacket->buf);
+                memcpy(ethernetHeader->ether_dhost, arpHeader->ar_sha, ETHER_ADDR_LEN);
+                memcpy(ethernetHeader->ether_shost, sendingInterface->addr, ETHER_ADDR_LEN);
+
+				// Send out the Packet and traverse to the next ARP entry
+                sr_send_packet(sr, arpPacket->buf, arpPacket->len, arpPacket->iface);
+                arpPacket = arpPacket->next;
+            }
+
+            sr_arpreq_destroy(&(sr->cache), arpEntryPointer);
+        }
+    }
+}
 
 
- /*---------------------------------------------------------------------
-  FUNCTION: sendARPRequest
-  - function is invoked to consturct a valid ethernet frame for sending
-    a ARP request
-  *---------------------------------------------------------------------*/
 
- void sendARPRequest(struct sr_instance *sr, struct sr_arpreq *request){
+void arpRequest(struct sr_instance *sr, struct sr_if *sendingInterface, uint32_t targetIP){
+    assert(sr);
+    assert(sendingInterface);
 
-     // Construct the request
-     uint8_t *requestPacket = (uint8_t *)malloc(sizeof(sr_ethernet_hdr_t) + sizeof(sr_arp_hdr_t));
+	// Get the sending packet Length
+    unsigned int len = sizeof(sr_ethernet_hdr_t) + sizeof(sr_arp_hdr_t);
+    uint8_t *newLength = (uint8_t *) malloc(len);
+    assert(newLength);
 
-     // Construct the ethernet header
-     struct sr_if *interface = sr_get_interface(sr, request->packets->iface);
-     sr_ethernet_hdr_t *ethernetHeader = (sr_ethernet_hdr_t *) requestPacket;
-     memset(ethernetHeader->ether_dhost, 255, ETHER_ADDR_LEN);
-     memcpy(ethernetHeader->ether_shost, interface->addr, ETHER_ADDR_LEN);
-     ethernetHeader->ether_type = htons(ETHERTYPE_ARP);
+	// Use newlength to construct the sending packet
+    sr_ethernet_hdr_t *ethernetHeader = (sr_ethernet_hdr_t *) newLength;
+    sr_arp_hdr_t *arpHeader = (sr_arp_hdr_t *) (newLength + sizeof(sr_ethernet_hdr_t));
 
-     // Construct the ARP Header
-     sr_arp_hdr_t *arpHeader = (sr_arp_hdr_t *)(requestPacket + sizeof(sr_ethernet_hdr_t));
-     arpHeader->ar_hrd = htons(ARP_HRD_ETHER);
-     arpHeader->ar_pro = htons(ARP_PRO_ETHER);
-     arpHeader->ar_hln = ETHER_ADDR_LEN;
-     arpHeader->ar_pln = sizeof(uint32_t);
-     arpHeader->ar_op = htons(ARP_REQUEST);
-     memcpy(arpHeader->ar_sha, interface->addr, ETHER_ADDR_LEN);
-     arpHeader->ar_sip = interface->ip;
-     memset(arpHeader->ar_tha, 255, ETHER_ADDR_LEN);
-     arpHeader->ar_tip = request->ip;
+    // Copy in Ethernet Header values
+    memset(ethernetHeader->ether_dhost, 255, ETHER_ADDR_LEN);
+    memcpy(ethernetHeader->ether_shost, sendingInterface->addr, ETHER_ADDR_LEN);
+    ethernetHeader->ether_type = htons(ARP_PACKET);
 
-     // Send request
-     sr_send_packet(sr, requestPacket, sizeof(sr_ethernet_hdr_t) + sizeof(sr_arp_hdr_t), request->packets->iface);
-     free(requestPacket);
- }
+    // Fill in ARP values
+    arpHeader->ar_hrd = htons(ARP_ETHERNET_HEADER);
+    arpHeader->ar_pro = htons(IP_PACKET);
+    arpHeader->ar_hln = ETHER_ADDR_LEN;
+    arpHeader->ar_pln = sizeof(uint32_t);
+    arpHeader->ar_op = htons(ARP_REQUEST);
+    memcpy(arpHeader->ar_sha, sendingInterface->addr, ETHER_ADDR_LEN);
+    arpHeader->ar_sip = sendingInterface->ip;
+    memset(arpHeader->ar_tha, 0, ETHER_ADDR_LEN);
+    arpHeader->ar_tip = targetIP;
+
+	// Send out our new Packet and Free it due to malloc
+    sr_send_packet(sr, newLength, len, sendingInterface->name);
+    free(newLength);
+}
+
+
+
+void arpReply(struct sr_instance *sr, uint8_t *packet, struct sr_if *sendingInterface, struct sr_if *senderInterface){
+    assert(sr);
+    assert(packet);
+    assert(sendingInterface);
+    assert(senderInterface);
+
+	// Construct Ethernet Header from Packet
+    sr_ethernet_hdr_t *ethernetHeader = (sr_ethernet_hdr_t *) packet;
+
+	// Construct ARP Header from packet
+    sr_arp_hdr_t *arpHeader = (sr_arp_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t));
+
+	// Size of both combined = how big our new packet Header should be
+    unsigned int len = sizeof(sr_ethernet_hdr_t) + sizeof(sr_arp_hdr_t);
+    uint8_t *newLength = (uint8_t *)malloc(len);
+    assert(newLength);
+
+	// Create a new Ethernet Header from the newLength we just defined
+    sr_ethernet_hdr_t *newEthernet = (sr_ethernet_hdr_t *) newLength;
+    sr_arp_hdr_t *newARP = (sr_arp_hdr_t *)(newLength + sizeof(sr_ethernet_hdr_t));
+
+    // Fill in the new ethernet values
+    memcpy(newEthernet->ether_dhost, ethernetHeader->ether_shost, ETHER_ADDR_LEN);
+    memcpy(newEthernet->ether_shost, sendingInterface->addr, ETHER_ADDR_LEN);
+    newEthernet->ether_type = ethernetHeader->ether_type;
+
+    // Fill in the new ARP values
+    newARP->ar_hrd = arpHeader->ar_hrd;
+    newARP->ar_pro = arpHeader->ar_pro;
+    newARP->ar_hln = arpHeader->ar_hln;
+    newARP->ar_pln = arpHeader->ar_pln;
+    newARP->ar_op = htons(ARP_REPLY);
+    memcpy(newARP->ar_sha, senderInterface->addr, ETHER_ADDR_LEN);
+    newARP->ar_sip = senderInterface->ip;
+    memcpy(newARP->ar_tha, arpHeader->ar_sha, ETHER_ADDR_LEN);
+    newARP->ar_tip = arpHeader->ar_sip;
+
+	// Send the Packet and free it
+    sr_send_packet(sr, newLength, len, sendingInterface->name);
+    free(newLength);
+}

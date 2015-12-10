@@ -59,13 +59,6 @@ int sr_read_from_server_expect(struct sr_instance* sr /* borrowed */, int expect
  *----------------------------------------------------------------------------*/
 static void sr_session_closed_help()
 {
-    fprintf(stdout, " `~`~`~`~`~`~`~`~`~`~`~`~`~`~`~`~`~`~`~`~`~`~`~`~\n");
-    fprintf(stdout, " Make sure you are using the right topology \n");
-    fprintf(stdout, "      ./sr -t <topoid> \n");
-    fprintf(stdout, "                       \n");
-    fprintf(stdout, " You can also check that another router isn't already \n");
-    fprintf(stdout, " on your topology at: http://vns-1.stanford.edu/summary \n");
-    fprintf(stdout, " `~`~`~`~`~`~`~`~`~`~`~`~`~`~`~`~`~`~`~`~`~`~`~`~\n");
 }
 
 /*-----------------------------------------------------------------------------
@@ -80,7 +73,6 @@ static void sr_session_closed_help()
  *  something other than zero on error
  *
  *---------------------------------------------------------------------------*/
-
 int sr_connect_to_server(struct sr_instance* sr,unsigned short port,
                          char* server)
 {
@@ -169,6 +161,8 @@ int sr_connect_to_server(struct sr_instance* sr,unsigned short port,
 
     return 0;
 } /* -- sr_connect_to_server -- */
+
+
 
 /*-----------------------------------------------------------------------------
  * Method: sr_handle_hwinfo(..)
@@ -481,7 +475,6 @@ int sr_read_from_server_expect(struct sr_instance* sr /* borrowed */, int expect
                 return -1;
             }
             printf(" <-- Ready to process packets --> \n");
-            fflush(stdout);
             break;
 
             /* ---------------- VNS_RTABLE ---------------- */
@@ -521,8 +514,7 @@ int sr_read_from_server_expect(struct sr_instance* sr /* borrowed */, int expect
  *
  *----------------------------------------------------------------------------*/
 
-static
-int
+static int
 sr_ether_addrs_match_interface( struct sr_instance* sr, /* borrowed */
                                 uint8_t* buf, /* borrowed */
                                 const char* name /* borrowed */ )
@@ -538,14 +530,12 @@ sr_ether_addrs_match_interface( struct sr_instance* sr, /* borrowed */
     ether_hdr = (struct sr_ethernet_hdr*)buf;
     iface = sr_get_interface(sr, name);
 
-    if ( iface == 0 )
-    {
+    if ( iface == 0 ){
         fprintf( stderr, "** Error, interface %s, does not exist\n", name);
         return 0;
     }
 
-    if ( memcmp( ether_hdr->ether_shost, iface->addr, ETHER_ADDR_LEN) != 0 )
-    {
+    if ( memcmp( ether_hdr->ether_shost, iface->addr, ETHER_ADDR_LEN) != 0 ){
         fprintf( stderr, "** Error, source address does not match interface\n");
         return 0;
     }
@@ -583,8 +573,7 @@ int sr_send_packet(struct sr_instance* sr /* borrowed */,
     assert(iface);
 
     /* don't waste my time ... */
-    if ( len < sizeof(struct sr_ethernet_hdr) )
-    {
+    if ( len < sizeof(struct sr_ethernet_hdr) ){
         fprintf(stderr , "** Error: packet is wayy to short \n");
         return -1;
     }
@@ -602,15 +591,13 @@ int sr_send_packet(struct sr_instance* sr /* borrowed */,
     /* -- log packet -- */
     sr_log_packet(sr,buf,len);
 
-    if ( ! sr_ether_addrs_match_interface( sr, buf, iface) )
-    {
+    if ( ! sr_ether_addrs_match_interface( sr, buf, iface) ){
         fprintf( stderr, "*** Error: problem with ethernet header, check log\n");
         free ( sr_pkt );
         return -1;
     }
 
-    if( write(sr->sockfd, sr_pkt, total_len) < total_len )
-    {
+    if( write(sr->sockfd, sr_pkt, total_len) < total_len ){
         fprintf(stderr, "Error writing packet\n");
         free(sr_pkt);
         return -1;
@@ -671,7 +658,7 @@ int  sr_arp_req_not_for_us(struct sr_instance* sr,
     e_hdr = (struct sr_ethernet_hdr*)packet;
     a_hdr = (struct sr_arp_hdr*)(packet + sizeof(struct sr_ethernet_hdr));
 
-    if ( (e_hdr->ether_type == htons(ETHERTYPE_ARP)) &&
+    if ( (e_hdr->ether_type == htons(ARP_PACKET)) &&
             (a_hdr->ar_op      == htons(ARP_REQUEST))   &&
             (a_hdr->ar_tip     != iface->ip ) )
     { return 1; }

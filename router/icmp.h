@@ -6,7 +6,21 @@
 #include "sr_arpcache.h"
 #include "sr_router.h"
 
-void constructHeaderIP(sr_ip_hdr_t *ipHeader, sr_ip_hdr_t *previous, uint32_t newLength, uint32_t newDestination, struct sr_if *interface, uint8_t icmpType, uint8_t code);
-void constructType3(sr_icmp_t3_hdr_t *Type3, uint8_t type, uint8_t code, sr_ip_hdr_t *previous);
-void constructHeaderEcho(sr_icmp_hdr_t *icmpHeader, uint32_t newLength, uint8_t type, uint8_t code, sr_ip_hdr_t *previous);
-void icmpMessage(struct sr_instance *sr, uint8_t *packet, uint8_t icmp_type, uint8_t icmp_code);
+#ifdef _DEBUG_
+#define Debug(x, args...) printf(x, ## args)
+#define DebugMAC(x) \
+  do { int ivyl; for(ivyl=0; ivyl<5; ivyl++) printf("%02x:", \
+  (unsigned char)(x[ivyl])); printf("%02x",(unsigned char)(x[5])); } while (0)
+#else
+#define Debug(x, args...) do{}while(0)
+#define DebugMAC(x) do{}while(0)
+#endif
+
+#define INIT_TTL 255
+#define PACKET_DUMP_SIZE 1024
+
+
+// Definitions
+
+void processICMP(struct sr_instance *sr, uint8_t *packet, unsigned int len);
+void sendICMP(struct sr_instance *sr, uint8_t *packet, unsigned int len, uint8_t icmp_type, uint8_t icmp_code);

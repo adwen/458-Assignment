@@ -20,6 +20,6 @@
 #define PACKET_DUMP_SIZE 1024
 
 
-/* IP function declerations */
-void processIP(struct sr_instance* , uint8_t * , unsigned int , char* );
-int ipSanityChecks(uint8_t * ip_packet,unsigned int len);
+// Function declarations
+void processIP(struct sr_instance *sr, uint8_t *packet, unsigned int len, struct sr_if *iface);
+void ipForwarding(struct sr_instance *sr, uint8_t *packet, unsigned int len);

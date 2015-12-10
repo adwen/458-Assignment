@@ -1,7 +1,7 @@
 /*-----------------------------------------------------------------------------
  * file:  sr_inface.
- * date:  Sun Oct 06 14:13:13 PDT 2002 
- * Contact: casado@stanford.edu 
+ * date:  Sun Oct 06 14:13:13 PDT 2002
+ * Contact: casado@stanford.edu
  *
  * Description:
  *
@@ -25,7 +25,7 @@
 #include "sr_if.h"
 #include "sr_router.h"
 
-/*--------------------------------------------------------------------- 
+/*---------------------------------------------------------------------
  * Method: sr_get_interface
  * Scope: Global
  *
@@ -54,7 +54,59 @@ struct sr_if* sr_get_interface(struct sr_instance* sr, const char* name)
     return 0;
 } /* -- sr_get_interface -- */
 
-/*--------------------------------------------------------------------- 
+
+struct sr_if *getAddressInterface(struct sr_instance *sr, const unsigned char *addr){
+
+    // Initialize a interface pointer
+    struct sr_if *interfacePointer = 0;
+
+    assert(addr);
+    assert(sr);
+
+    // Point to the list of interfaces
+    interfacePointer = sr->if_list;
+
+    // While it is pointing to non null object
+    while (interfacePointer) {
+
+        // If the given address is not the same as the current pointed address, return
+        if (!memcmp(interfacePointer->addr, addr, ETHER_ADDR_LEN)) {
+            return interfacePointer;
+        }
+
+        // Gonext
+        interfacePointer = interfacePointer->next;
+    }
+
+    // Failed
+    return 0;
+}
+
+
+struct sr_if *getIpInterface(struct sr_instance *sr, uint32_t givenIP){
+
+
+    struct sr_if *interfacePointer = 0;
+
+    assert(sr);
+
+    interfacePointer = sr->if_list;
+
+    // While pointing to non-null
+    while (interfacePointer) {
+
+        if (interfacePointer->ip == givenIP) {
+            return interfacePointer;
+        }
+        // gonext
+        interfacePointer = interfacePointer->next;
+    }
+
+    // Failed
+    return 0;
+}
+
+/*---------------------------------------------------------------------
  * Method: sr_add_interface(..)
  * Scope: Global
  *
@@ -90,13 +142,13 @@ void sr_add_interface(struct sr_instance* sr, const char* name)
     if_walker = if_walker->next;
     strncpy(if_walker->name,name,sr_IFACE_NAMELEN);
     if_walker->next = 0;
-} /* -- sr_add_interface -- */ 
+} /* -- sr_add_interface -- */
 
-/*--------------------------------------------------------------------- 
+/*---------------------------------------------------------------------
  * Method: sr_sat_ether_addr(..)
  * Scope: Global
  *
- * set the ethernet address of the LAST interface in the interface list 
+ * set the ethernet address of the LAST interface in the interface list
  *
  *---------------------------------------------------------------------*/
 
@@ -106,7 +158,7 @@ void sr_set_ether_addr(struct sr_instance* sr, const unsigned char* addr)
 
     /* -- REQUIRES -- */
     assert(sr->if_list);
-    
+
     if_walker = sr->if_list;
     while(if_walker->next)
     {if_walker = if_walker->next; }
@@ -116,7 +168,7 @@ void sr_set_ether_addr(struct sr_instance* sr, const unsigned char* addr)
 
 } /* -- sr_set_ether_addr -- */
 
-/*--------------------------------------------------------------------- 
+/*---------------------------------------------------------------------
  * Method: sr_set_ether_ip(..)
  * Scope: Global
  *
@@ -130,7 +182,7 @@ void sr_set_ether_ip(struct sr_instance* sr, uint32_t ip_nbo)
 
     /* -- REQUIRES -- */
     assert(sr->if_list);
-    
+
     if_walker = sr->if_list;
     while(if_walker->next)
     {if_walker = if_walker->next; }
@@ -140,7 +192,7 @@ void sr_set_ether_ip(struct sr_instance* sr, uint32_t ip_nbo)
 
 } /* -- sr_set_ether_ip -- */
 
-/*--------------------------------------------------------------------- 
+/*---------------------------------------------------------------------
  * Method: sr_print_if_list(..)
  * Scope: Global
  *
@@ -159,17 +211,17 @@ void sr_print_if_list(struct sr_instance* sr)
     }
 
     if_walker = sr->if_list;
-    
+
     sr_print_if(if_walker);
     while(if_walker->next)
     {
-        if_walker = if_walker->next; 
+        if_walker = if_walker->next;
         sr_print_if(if_walker);
     }
 
 } /* -- sr_print_if_list -- */
 
-/*--------------------------------------------------------------------- 
+/*---------------------------------------------------------------------
  * Method: sr_print_if(..)
  * Scope: Global
  *

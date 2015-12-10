@@ -131,6 +131,9 @@ struct sr_arpreq *sr_arpcache_insert(struct sr_arpcache *cache,
                                      unsigned char *mac,
                                      uint32_t ip);
 
+
+void handle_arpreq(struct sr_instance *sr, struct sr_arpreq *req);
+
 /* Frees all memory associated with this arp request entry. If this arp request
    entry is on the arp request queue, it is removed from the queue. */
 void sr_arpreq_destroy(struct sr_arpcache *cache, struct sr_arpreq *entry);
@@ -146,12 +149,5 @@ void sr_arpcache_dump(struct sr_arpcache *cache);
 int   sr_arpcache_init(struct sr_arpcache *cache);
 int   sr_arpcache_destroy(struct sr_arpcache *cache);
 void *sr_arpcache_timeout(void *cache_ptr);
-
-/* ARP requests are sent every second
-   until we send 5 ARP requests, then we send ICMP host unreachable back to
-   all packets waiting on this ARP request */
-void sr_arpcache_sweepreqs(struct sr_instance *sr);
-
-void handle_arpreq(struct sr_instance *sr, struct sr_arpreq *req);
 
 #endif

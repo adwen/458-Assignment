@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <netinet/in.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -6,50 +7,101 @@
 #include <pthread.h>
 #include <sched.h>
 #include <string.h>
+
+#include "ip.h"
+#include "arp.h"
+#include "icmp.h"
 #include "sr_arpcache.h"
 #include "sr_router.h"
 #include "sr_if.h"
 #include "sr_protocol.h"
-#include "icmp.h"
-#include "ip.h"
-#include "arp.h"
 
-
-void handle_arpreq(struct sr_instance *sr, struct sr_arpreq *req) {
-    time_t now = time(NULL);
-
-    if (difftime(now, req->sent) > 1.0) {
-        if (req->times_sent >= 5) {
-            struct sr_packet *packets = req->packets;
-            // Send icmp host unreachable to source addr of all pkts waiting on this request
-            while (packets != NULL) {
-                icmpMessage(sr, packets->buf + sizeof(sr_ethernet_hdr_t), ICMP_DEST_UNREACHABLE, ICMP_HOST_UNREACHABLE);
-                packets = packets->next;
-            }
-            sr_arpreq_destroy(&sr->cache, req);
-        }
-        else {
-            // Send arp request
-            sendARPRequest(sr, req);
-            req->sent = now;
-            req->times_sent++;
-        }
-    }
-}
-
-
-/* This function gets called every second. See the comments in the header file
-   for an idea of what it should look like. */
+/*
+  This function gets called every second. For each request sent out, we keep
+  checking whether we should resend an request or destroy the arp request.
+  See the comments in the header file for an idea of what it should look like.
+*/
 void sr_arpcache_sweepreqs(struct sr_instance *sr) {
-    /* Fill this in */
-    struct sr_arpreq *current_request = sr->cache.requests;
-    while (current_request != NULL) {
-        // Save next pointer before calling handle_arpreq
-        struct sr_arpreq *next_request = current_request->next;
-        handle_arpreq(sr, current_request);
-        current_request = next_request;
+    struct sr_arpreq *req = NULL;
+    struct sr_arpreq *next = NULL;
+
+    req = sr->cache.requests;
+
+    while (req) {
+        next = req->next;
+        handle_arpreq(sr, req);
+        req = next;
     }
 }
+
+
+/*
+The handle_arpreq() function is a function you should write, and it should
+handle sending ARP requests if necessary:
+
+function handle_arpreq(request):
+    if difftime(now, request->sent) > 1.0
+        if request->times_sent >= 5:
+            send icmp host unreachable to source addr of all pkts waiting
+              on this request
+            arpreq_destroy(request)
+        else:
+            send arp request
+            request->sent = now
+            request->times_sent++
+
+*/
+void handle_arpreq(struct sr_instance *sr, struct sr_arpreq *request){
+    assert(sr);
+    assert(request);
+
+	// If time since last sent is more than 1 second
+    if (difftime(time(NULL), request->sent) >= 1.0) {
+
+		/* If an ARP request has been sent 5 times with no response,
+		a destination host unreachable should go back to all the sender of packets that were waiting on
+		a reply to this ARP request. */
+        if (request->times_sent >= 5) {
+
+			// Iniitalize variables for the loop
+            struct sr_packet *packetPointer = NULL;
+            sr_ethernet_hdr_t *ethernetHeader = NULL;
+            struct sr_if *interface = NULL;
+
+			// get a pointer to a array of all packets waiting
+            packetPointer = request->packets;
+
+			// For every xender of packets waiting, send host unreachable
+            while (packetPointer != NULL) {
+                ethernetHeader = (sr_ethernet_hdr_t *)(packetPointer->buf);
+                interface = getAddressInterface(sr, ethernetHeader->ether_dhost);
+
+                /* do not send an ICMP message for an ICMP message */
+				// If we got an interface of a waiting sender, send the ICMP host unreachable
+                if (interface) {
+                    sendICMP(sr, packetPointer->buf, packetPointer->len, DESTINATION_UNREACHABLE, HOST_UNREACHABLE_CODE);
+                }
+
+				// Go to the next exisiting packet
+                packetPointer = packetPointer->next;
+            }
+            sr_arpreq_destroy(&(sr->cache), request);
+        }
+
+		// Otherwise, just send arp request with its sent time = now and increment times sent
+		else {
+            struct sr_if *sendingInterface = sr_get_interface(sr, request->packets->iface);
+            arpRequest(sr, sendingInterface, request->ip);
+
+			// Set sent time to NOW
+            request->sent = time(NULL); // time(NULL) = NOW
+
+			// Increment # of times sent
+            request->times_sent = request->times_sent + 1;
+        }
+    }
+}
+
 
 /* You should not need to touch the rest of this code. */
 
